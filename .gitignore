@@ -1,0 +1,13 @@
+node_modules/
+dist/
+coverage/
+.DS_Store
+*.log
+
+.env
+.tmp/
+tmp/
+.managed-agent/
+
+/mnt/
+/tmp/rclone-mounts/

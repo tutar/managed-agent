@@ -1,0 +1,28 @@
+{
+  "name": "@managed-agent/managed-agent-api",
+  "description": "Managed Agent API service with API/channel and control-plane layers.",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.18.0"
+  },
+  "scripts": {
+    "start": "node --import tsx src/server.ts",
+    "dev": "node --watch --import tsx src/server.ts",
+    "demo": "npm run start",
+    "lint": "biome check src",
+    "format": "biome format --write src",
+    "typecheck": "tsc -p tsconfig.json",
+    "test:unit": "node --import tsx --test test/*.test.ts",
+    "check": "npm run lint && npm run typecheck"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "^0.4.5",
+    "drizzle-orm": "^0.44.2",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.5"
+  }
+}

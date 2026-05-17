@@ -1,0 +1,705 @@
+openapi: 3.1.0
+info:
+  title: Managed Agent API
+  version: 0.1.0
+  summary: Public frontend-facing HTTP and SSE contract for the managed-agent platform.
+  description: >
+    This specification defines the current browser-facing boundary exposed by
+    `apps/managed-agent-api`. It is intentionally scoped to the Web UI and
+    other first-party clients. Internal worker transport is excluded.
+servers:
+  - url: http://127.0.0.1:3000
+    description: Local development server
+tags:
+  - name: Health
+  - name: Sessions
+  - name: Triggers
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Read API health status
+      operationId: getHealth
+      responses:
+        "200":
+          description: API process is reachable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /sessions:
+    post:
+      tags: [Sessions]
+      summary: Create a new session and stream the first assistant response
+      operationId: createSession
+      parameters:
+        - $ref: "#/components/parameters/UserIdQuery"
+        - $ref: "#/components/parameters/IncludeProcessQuery"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSessionRequest"
+      responses:
+        "200":
+          description: Session accepted and streamed as SSE
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: >
+                  Server-Sent Events stream. Each frame contains one `event:`
+                  line and one JSON `data:` line. Clients should treat the
+                  event types listed under `components.x-sseEvents` as the
+                  stable browser contract.
+              examples:
+                createSessionStream:
+                  value: |-
+                    event: session.created
+                    data: {"sessionId":"sess_1","sessionName":"介绍下你自己。"}
+
+                    event: message.accepted
+                    data: {"sessionId":"sess_1","entry":{"id":"entry_2","parentId":null,"createdAt":"2026-05-16T11:58:00.000Z","messageType":"user","content":[{"type":"text","text":"介绍下你自己。"}]}}
+
+                    event: final.output.delta
+                    data: {"sessionId":"sess_1","entryId":"entry_4","parentId":"entry_3","text":"我是"}
+
+                    event: final.output.delta
+                    data: {"sessionId":"sess_1","entryId":"entry_4","parentId":"entry_3","text":"一个编程助手。"}
+
+                    event: final.output.completed
+                    data: {"sessionId":"sess_1","entryId":"entry_4"}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /sessions/{sessionId}:
+    get:
+      tags: [Sessions]
+      summary: Read one session transcript snapshot
+      operationId: getSession
+      parameters:
+        - $ref: "#/components/parameters/SessionIdPath"
+      responses:
+        "200":
+          description: Session transcript snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDetailResponse"
+        "404":
+          $ref: "#/components/responses/SessionNotFound"
+    patch:
+      tags: [Sessions]
+      summary: Rename a session
+      operationId: updateSession
+      description: >
+        V1 only supports updating `sessionName`. Running sessions may still be
+        renamed.
+      parameters:
+        - $ref: "#/components/parameters/SessionIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSessionRequest"
+      responses:
+        "200":
+          description: Session updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionDetailResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/SessionNotFound"
+    delete:
+      tags: [Sessions]
+      summary: Archive a session by soft delete
+      operationId: deleteSession
+      description: >
+        This endpoint performs an irreversible soft delete. Archived sessions no
+        longer appear in the recent-session list and their transcript is not
+        recoverable through public APIs. Running sessions cannot be deleted.
+      parameters:
+        - $ref: "#/components/parameters/SessionIdPath"
+      responses:
+        "204":
+          description: Session archived successfully
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "404":
+          $ref: "#/components/responses/SessionNotFound"
+  /sessions/{sessionId}/messages:
+    post:
+      tags: [Sessions]
+      summary: Append one user message and stream the continued assistant response
+      operationId: submitMessage
+      description: >
+        V1 expects clients to avoid submitting new messages while the session
+        status is `running`. The standalone web UI enforces this in the input
+        layer. The server does not yet reject concurrent submissions.
+      parameters:
+        - $ref: "#/components/parameters/SessionIdPath"
+        - $ref: "#/components/parameters/UserIdQuery"
+        - $ref: "#/components/parameters/IncludeProcessQuery"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMessageRequest"
+      responses:
+        "200":
+          description: Message accepted and streamed as SSE
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Same SSE contract as `POST /sessions`
+              examples:
+                continueSessionStream:
+                  value: |-
+                    event: message.accepted
+                    data: {"sessionId":"sess_1","entry":{"id":"entry_5","parentId":"entry_4","createdAt":"2026-05-16T11:59:00.000Z","messageType":"user","content":[{"type":"text","text":"继续"}]}}
+
+                    event: final.output.delta
+                    data: {"sessionId":"sess_1","entryId":"entry_7","parentId":"entry_6","text":"继续处理当前请求。"}
+
+                    event: final.output.completed
+                    data: {"sessionId":"sess_1","entryId":"entry_7"}
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/SessionNotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /sessions/{sessionId}/cancel:
+    post:
+      tags: [Sessions]
+      summary: Request cancellation for the current in-flight session run
+      operationId: cancelSession
+      parameters:
+        - $ref: "#/components/parameters/SessionIdPath"
+      responses:
+        "200":
+          description: Cancel request acknowledged
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelSessionResponse"
+        "404":
+          $ref: "#/components/responses/SessionNotFound"
+  /users/{userId}/sessions:
+    get:
+      tags: [Sessions]
+      summary: List recent sessions for one user
+      operationId: listUserSessions
+      description: >
+        Returns active, non-archived sessions sorted by `lastActiveAt desc,
+        sessionId desc`.
+      parameters:
+        - $ref: "#/components/parameters/UserIdPath"
+        - $ref: "#/components/parameters/LimitQuery"
+        - $ref: "#/components/parameters/CursorQuery"
+      responses:
+        "200":
+          description: Recent sessions ordered by latest activity first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSessionsResponse"
+  /triggers:
+    post:
+      tags: [Triggers]
+      summary: Create a trigger placeholder
+      operationId: createTrigger
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTriggerRequest"
+      responses:
+        "200":
+          description: Trigger accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TriggerAcceptedResponse"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  parameters:
+    SessionIdPath:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+    UserIdPath:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    UserIdQuery:
+      name: userId
+      in: query
+      required: false
+      description: >
+        Browser/user identity. The current local implementation defaults to
+        `demo-user` if omitted.
+      schema:
+        type: string
+        default: demo-user
+    IncludeProcessQuery:
+      name: includeProcess
+      in: query
+      required: false
+      description: Include `process.*` and `action.*` SSE events in the stream.
+      schema:
+        type: boolean
+        default: true
+    LimitQuery:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of sessions to return.
+      schema:
+        type: integer
+        default: 20
+    CursorQuery:
+      name: cursor
+      in: query
+      required: false
+      description: Pagination cursor string.
+      schema:
+        type: string
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: bad_request
+              message: Invalid request parameters
+    SessionNotFound:
+      description: Session does not exist or has been archived
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: session_not_found
+              message: session sess_missing not found
+    Conflict:
+      description: Request conflicts with current session lifecycle state
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: session_state_conflict
+              message: session sess_running cannot be archived while running
+    InternalError:
+      description: Request failed before a normal response could be completed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: internal_error
+              message: request body too large
+  schemas:
+    HealthResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          const: true
+    ContentItem:
+      oneOf:
+        - $ref: "#/components/schemas/TextContentItem"
+        - $ref: "#/components/schemas/ImageContentItem"
+        - $ref: "#/components/schemas/VideoContentItem"
+        - $ref: "#/components/schemas/ToolCallContentItem"
+    InputContentItem:
+      oneOf:
+        - $ref: "#/components/schemas/TextContentItem"
+        - $ref: "#/components/schemas/ImageContentItem"
+        - $ref: "#/components/schemas/VideoContentItem"
+    TextContentItem:
+      type: object
+      required: [type, text]
+      properties:
+        type:
+          type: string
+          const: text
+        text:
+          type: string
+    ImageContentItem:
+      type: object
+      required: [type, url]
+      properties:
+        type:
+          type: string
+          const: image
+        url:
+          type: string
+    VideoContentItem:
+      type: object
+      required: [type, url]
+      properties:
+        type:
+          type: string
+          const: video
+        url:
+          type: string
+    ToolCallContentItem:
+      type: object
+      required: [type, toolCallId, toolName, status]
+      description: >
+        `arguments` may appear for `started`, `completed`, and `error`.
+        `result` only appears for `completed`. `error` only appears for
+        `error`.
+      properties:
+        type:
+          type: string
+          const: tool_call
+        toolCallId:
+          type: string
+        toolName:
+          type: string
+        status:
+          type: string
+          enum: [started, completed, error]
+        arguments:
+          type: string
+          description: JSON encoded string of tool arguments
+        result:
+          type: string
+          description: Result/output of the tool call
+        error:
+          type: string
+          description: Failure summary for `status=error`
+    SessionInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/InputContentItem"
+    CreateSessionRequest:
+      type: object
+      required: [input]
+      properties:
+        model:
+          type: string
+          description: >
+            Requested model id in `provider/model` format. Example:
+            `deepseek/deepseek-v4-pro`.
+        thinkingLevel:
+          type: string
+          description: Requested reasoning level.
+          enum: [off, minimal, low, medium, high, xhigh]
+        input:
+          $ref: "#/components/schemas/SessionInput"
+    UpdateSessionRequest:
+      type: object
+      additionalProperties: false
+      description: V1 only supports renaming a session.
+      properties:
+        sessionName:
+          type: string
+          description: New name/title for the session
+          minLength: 1
+    CreateMessageRequest:
+      type: object
+      required: [input]
+      properties:
+        input:
+          $ref: "#/components/schemas/SessionInput"
+    CreateTriggerRequest:
+      type: object
+      properties:
+        triggerType:
+          type: string
+          default: manual
+    SessionEntry:
+      type: object
+      required: [id, parentId, createdAt, messageType, content]
+      properties:
+        id:
+          type: string
+        parentId:
+          type: [string, "null"]
+        createdAt:
+          type: string
+          format: date-time
+        messageType:
+          type: string
+          enum: [user, process, assistant]
+        content:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContentItem"
+    SessionDetailResponse:
+      type: object
+      required:
+        [sessionId, sessionName, status, model, thinkingLevel, createdAt, lastActiveAt, entries]
+      properties:
+        sessionId:
+          type: string
+        sessionName:
+          type: string
+        status:
+          type: string
+          enum: [idle, running, error]
+        model:
+          type: string
+        thinkingLevel:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastActiveAt:
+          type: string
+          format: date-time
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionEntry"
+    SessionListItem:
+      type: object
+      required: [sessionId, sessionName, status, createdAt, lastActiveAt]
+      properties:
+        sessionId:
+          type: string
+        sessionName:
+          type: string
+        status:
+          type: string
+          enum: [idle, running, error]
+        createdAt:
+          type: string
+          format: date-time
+        lastActiveAt:
+          type: string
+          format: date-time
+    UserSessionsResponse:
+      type: object
+      required: [items, hasMore]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SessionListItem"
+        nextCursor:
+          type: [string, "null"]
+          description: Opaque cursor for the next page; null when exhausted
+        hasMore:
+          type: boolean
+          description: Whether another page can be fetched with `nextCursor`
+    CancelSessionResponse:
+      type: object
+      required: [sessionId, accepted]
+      properties:
+        sessionId:
+          type: string
+        accepted:
+          type: boolean
+    TriggerAcceptedResponse:
+      type: object
+      required: [triggerId, accepted, triggerType]
+      properties:
+        triggerId:
+          type: string
+        accepted:
+          type: boolean
+          const: true
+        triggerType:
+          type: string
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+  x-sseEvents:
+    - name: session.created
+      direction: server-to-client
+      description: Emitted once when a new session is created.
+      payload:
+        type: object
+        required: [sessionId, sessionName]
+        properties:
+          sessionId:
+            type: string
+          sessionName:
+            type: string
+    - name: message.accepted
+      direction: server-to-client
+      description: Emitted after the user message is persisted.
+      payload:
+        type: object
+        required: [sessionId, entry]
+        properties:
+          sessionId:
+            type: string
+          entry:
+            $ref: "#/components/schemas/SessionEntry"
+    - name: process.delta
+      direction: server-to-client
+      description: Optional process-layer progress event.
+      payload:
+        type: object
+        required: [sessionId, entryId, parentId, text]
+        properties:
+          sessionId:
+            type: string
+          entryId:
+            type: string
+          parentId:
+            type: string
+          text:
+            type: string
+    - name: action.started
+      direction: server-to-client
+      description: Optional tool/action start event.
+      payload:
+        type: object
+        required: [sessionId, entryId, parentId, toolCallId, name]
+        properties:
+          sessionId:
+            type: string
+          entryId:
+            type: string
+          parentId:
+            type: string
+          toolCallId:
+            type: string
+          name:
+            type: string
+          arguments:
+            type: string
+    - name: action.completed
+      direction: server-to-client
+      description: Optional tool/action completion event.
+      payload:
+        type: object
+        required: [sessionId, entryId, parentId, toolCallId, name]
+        properties:
+          sessionId:
+            type: string
+          entryId:
+            type: string
+          parentId:
+            type: string
+          toolCallId:
+            type: string
+          name:
+            type: string
+          result:
+            type: string
+    - name: action.failed
+      direction: server-to-client
+      description: Optional tool/action failure event.
+      payload:
+        type: object
+        required: [sessionId, entryId, parentId, toolCallId, name, error]
+        properties:
+          sessionId:
+            type: string
+          entryId:
+            type: string
+          parentId:
+            type: string
+          toolCallId:
+            type: string
+          name:
+            type: string
+          arguments:
+            type: string
+          error:
+            type: string
+    - name: final.output.delta
+      direction: server-to-client
+      description: Streamed assistant output chunk.
+      payload:
+        type: object
+        required: [sessionId, entryId, parentId, text]
+        properties:
+          sessionId:
+            type: string
+          entryId:
+            type: string
+          parentId:
+            type: string
+          text:
+            type: string
+    - name: final.output.completed
+      direction: server-to-client
+      description: Marks the end of one assistant response stream.
+      payload:
+        type: object
+        required: [sessionId, entryId]
+        properties:
+          sessionId:
+            type: string
+          entryId:
+            type: string
+    - name: run.failed
+      direction: server-to-client
+      description: >
+        Emitted when worker execution fails after the user message was already
+        accepted.
+      payload:
+        type: object
+        required: [sessionId, entryId, parentId, code, message]
+        properties:
+          sessionId:
+            type: string
+          entryId:
+            type: string
+          parentId:
+            type: string
+          code:
+            type: string
+          message:
+            type: string
+    - name: run.cancelled
+      direction: server-to-client
+      description: >
+        Emitted when the active run is interrupted by `POST /sessions/{sessionId}/cancel`.
+        After this event, the SSE stream is closed without a `final.output.completed`.
+      payload:
+        type: object
+        required: [sessionId, entryId, parentId, message]
+        properties:
+          sessionId:
+            type: string
+          entryId:
+            type: string
+          parentId:
+            type: string
+          message:
+            type: string

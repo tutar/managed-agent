@@ -1,0 +1,45 @@
+{
+  "name": "managed-agent",
+  "description": "Managed agent platform framework and local runtime scaffold.",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.18.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.3.5",
+    "@parcel/watcher-linux-x64-glibc": "^2.5.6",
+    "@types/node": "^22.10.5",
+    "@typescript/native-preview": "7.0.0-dev.20260120.1",
+    "concurrently": "^9.2.1",
+    "husky": "^9.1.7",
+    "jiti": "^2.7.0",
+    "shx": "^0.4.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2"
+  },
+  "scripts": {
+    "db:up": "docker compose -f infra/local/docker-compose.yml up -d postgres",
+    "db:down": "docker compose -f infra/local/docker-compose.yml down",
+    "db:logs": "docker compose -f infra/local/docker-compose.yml logs postgres",
+    "dev": "npm run dev --workspace @managed-agent/managed-agent-api",
+    "dev:all": "concurrently --kill-others-on-fail --names worker,api,web-ui --prefix-colors blue,green,magenta \"npm run start:worker\" \"npm run start --workspace @managed-agent/managed-agent-api\" \"npm run start:web-ui\"",
+    "dev:all:pi": "env MANAGED_AGENT_RUNTIME=pi MANAGED_AGENT_DEFAULT_MODEL=deepseek/deepseek-v4-pro concurrently --kill-others-on-fail --names worker,api,web-ui --prefix-colors blue,green,magenta \"npm run start:worker\" \"npm run start --workspace @managed-agent/managed-agent-api\" \"npm run start:web-ui\"",
+    "start": "npm run start --workspace @managed-agent/managed-agent-api",
+    "start:worker": "npm run start --workspace @managed-agent/harness-worker",
+    "start:web-ui": "npm run start --workspace @managed-agent/web-ui",
+    "demo": "npm run start",
+    "demo:api": "npm run start --workspace @managed-agent/managed-agent-api",
+    "lint": "npm run lint --workspaces --if-present",
+    "format": "npm run format --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "check": "npm run lint && npm run typecheck",
+    "check:api": "npm run check --workspace @managed-agent/managed-agent-api",
+    "check:worker": "npm run check --workspace @managed-agent/harness-worker",
+    "check:web-ui": "npm run check --workspace @managed-agent/web-ui",
+    "clean": "shx rm -rf node_modules apps/managed-agent-api/node_modules apps/harness-worker/node_modules apps/web-ui/node_modules"
+  }
+}
