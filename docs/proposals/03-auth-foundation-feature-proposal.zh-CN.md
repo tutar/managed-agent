@@ -5,6 +5,7 @@
 - `Related Design`:
   - [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
   - [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)
+  - [../design/auth-design.zh-CN.md](../design/auth-design.zh-CN.md)
 
 ## 概述
 
@@ -24,6 +25,8 @@
 | 当前用户形态 | 只支持个人用户 |
 | 当前认证主路线 | 账号密码 + 服务端 session |
 | 当前核心身份键 | `userId` |
+| 登录态对象 | `login session` |
+| 当前会话真相 | `agent session`（现有 `sessionId` / `pi` session） |
 | 当前是否引入 `tenantId` | 否 |
 | 当前是否支持企业用户 | 否 |
 | 当前是否支持 SSO | 否 |
@@ -107,7 +110,39 @@ tenantId -> userId -> sessionId
 
 原因不是最终不做多租户，而是当前阶段先把“用户真实存在”这件事补齐，再进入租户维度会更稳。
 
-### 3. 当前阶段的最小能力集合
+### 3. 登录会话与 Agent 会话的边界
+
+当前文档里的“session”必须明确分成两类，不能混用：
+
+| 对象 | 作用 | 当前是否已存在 |
+|---|---|---|
+| `login session` | 表示用户认证态；用于登录、登出、过期、续期和 cookie/session store | 否 |
+| `agent session` | 表示 managed agent 会话；对应当前 `sessionId`、`pi` session、transcript、续写 prompt | 是 |
+
+关系建议明确为：
+
+```text
+user account
+  -> login session
+    -> authenticated request
+      -> userId
+        -> agent session
+```
+
+这意味着：
+
+- `login session` 只负责回答“当前请求是谁”
+- `agent session` 继续负责回答“当前会话是什么、历史消息是什么、如何继续执行”
+- 登录能力引入后，不应复用、替换或污染当前 `agent session` 模型
+- `harness-worker` 和 `pi` 不应感知 `login session`，它们继续只处理 `agent session`
+
+在实现边界上，更准确的说法是：
+
+- `Managed Agent API` 从登录态解析当前用户
+- 再把 `userId` 传入已有 session/control-plane 逻辑
+- 当前 `POST /sessions`、`GET /sessions/{id}`、`GET /users/{userId}/sessions` 等接口，只是把开发态 `demo-user` 来源替换成真实登录态来源
+
+### 4. 当前阶段的最小能力集合
 
 建议第一版只包含：
 
@@ -126,7 +161,7 @@ tenantId -> userId -> sessionId
 
 这份提案只冻结能力面，不展开详细接口 contract、cookie 字段或密码算法实现细节。
 
-### 4. 当前认证主路线先固定为账号密码 + session
+### 5. 当前认证主路线先固定为账号密码 + session
 
 当前阶段建议选择：
 
@@ -158,12 +193,14 @@ tenantId -> userId -> sessionId
 | 注册/登录/登出 | `Managed Agent API` |
 | 登录态保持 | 服务端 session |
 | 当前用户解析 | `Managed Agent API` |
-| session / trigger / audit 用户归属 | `Managed Agent Control Plane` |
+| `agent session` / trigger / audit 用户归属 | `Managed Agent API` 内的 control-plane 逻辑 |
 
 这一步不改变：
 
 - `pi` session 仍然是会话真相
+- `agent session` 仍然是当前项目里已经存在的 durable conversation session
 - worker 仍然不需要读取用户目录
+- worker 和 `pi` 不需要理解登录 cookie 或 `login session`
 - transcript durable truth 仍然是 transcript 文件
 
 ## 为什么排在多租户之前
@@ -186,9 +223,9 @@ tenantId -> userId -> sessionId
 - 当前阶段最小能力集合
 - 它与多租户的前后关系
 
-后续如果继续展开，建议新增：
+后续实现设计见：
 
-- `auth-design.zh-CN.md`
+- [../design/auth-design.zh-CN.md](../design/auth-design.zh-CN.md)
 
 相关文档：
 

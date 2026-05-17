@@ -1,19 +1,14 @@
-import type {
-  SessionExecutor,
-  SessionRunCompletion,
-  SessionRunEvent,
-  SessionRunJob,
-} from "./jobs/session-run-job.js"
-import { createSessionExecutor } from "./runtime/create-session-executor.js"
+import type { SessionExecutor, SessionRunCompletion, SessionRunEvent, SessionRunJob } from "./jobs/session-run-job.js";
+import { createSessionExecutor } from "./runtime/create-session-executor.js";
 
 export class HarnessWorkerExecutionError extends Error {
-  readonly code: string
+	readonly code: string;
 
-  constructor(message: string, options?: { code?: string; cause?: unknown }) {
-    super(message, { cause: options?.cause })
-    this.name = "HarnessWorkerExecutionError"
-    this.code = options?.code ?? "worker_execution_failed"
-  }
+	constructor(message: string, options?: { code?: string; cause?: unknown }) {
+		super(message, { cause: options?.cause });
+		this.name = "HarnessWorkerExecutionError";
+		this.code = options?.code ?? "worker_execution_failed";
+	}
 }
 
 /**
@@ -25,63 +20,61 @@ export class HarnessWorkerExecutionError extends Error {
  * control-plane orchestration contract.
  */
 export interface HarnessWorkerGateway {
-  execute(
-    job: SessionRunJob,
-  ): AsyncGenerator<SessionRunEvent, SessionRunCompletion>
+	execute(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion>;
 }
 
 type WorkerCompletionEvent = {
-  type: "run.completed"
-  data: SessionRunCompletion
-}
+	type: "run.completed";
+	data: SessionRunCompletion;
+};
 
 const parseSseFrames = async (
-  response: Response,
-  onEvent: (event: SessionRunEvent | WorkerCompletionEvent) => void,
+	response: Response,
+	onEvent: (event: SessionRunEvent | WorkerCompletionEvent) => void,
 ) => {
-  const reader = response.body?.getReader()
+	const reader = response.body?.getReader();
 
-  if (!reader) {
-    throw new Error("worker response body is not readable")
-  }
+	if (!reader) {
+		throw new Error("worker response body is not readable");
+	}
 
-  const decoder = new TextDecoder()
-  let buffer = ""
+	const decoder = new TextDecoder();
+	let buffer = "";
 
-  while (true) {
-    const next = await reader.read()
+	while (true) {
+		const next = await reader.read();
 
-    if (next.done) {
-      break
-    }
+		if (next.done) {
+			break;
+		}
 
-    buffer += decoder.decode(next.value, { stream: true })
-    const frames = buffer.split("\n\n")
-    buffer = frames.pop() ?? ""
+		buffer += decoder.decode(next.value, { stream: true });
+		const frames = buffer.split("\n\n");
+		buffer = frames.pop() ?? "";
 
-    for (const frame of frames) {
-      const eventName = frame
-        .split("\n")
-        .find((line) => line.startsWith("event:"))
-        ?.slice("event:".length)
-        .trim()
-      const dataLine = frame
-        .split("\n")
-        .find((line) => line.startsWith("data:"))
-        ?.slice("data:".length)
-        .trim()
+		for (const frame of frames) {
+			const eventName = frame
+				.split("\n")
+				.find((line) => line.startsWith("event:"))
+				?.slice("event:".length)
+				.trim();
+			const dataLine = frame
+				.split("\n")
+				.find((line) => line.startsWith("data:"))
+				?.slice("data:".length)
+				.trim();
 
-      if (!eventName || !dataLine) {
-        continue
-      }
+			if (!eventName || !dataLine) {
+				continue;
+			}
 
-      onEvent({
-        type: eventName,
-        data: JSON.parse(dataLine) as unknown,
-      } as SessionRunEvent | WorkerCompletionEvent)
-    }
-  }
-}
+			onEvent({
+				type: eventName,
+				data: JSON.parse(dataLine) as unknown,
+			} as SessionRunEvent | WorkerCompletionEvent);
+		}
+	}
+};
 
 /**
  * Build the local in-process worker gateway.
@@ -90,35 +83,32 @@ const parseSseFrames = async (
  * the API layer unaware of how mock or pi-backed execution is chosen.
  */
 export const createLocalHarnessWorkerGateway = ({
-  executor = createSessionExecutor(),
+	executor = createSessionExecutor(),
 }: {
-  executor?: SessionExecutor
+	executor?: SessionExecutor;
 } = {}): HarnessWorkerGateway => {
-  return {
-    async *execute(
-      job: SessionRunJob,
-    ): AsyncGenerator<SessionRunEvent, SessionRunCompletion> {
-      const iterator = executor.run(job)
+	return {
+		async *execute(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion> {
+			const iterator = executor.run(job);
 
-      try {
-        while (true) {
-          const next = await iterator.next()
+			try {
+				while (true) {
+					const next = await iterator.next();
 
-          if (next.done) {
-            return next.value
-          }
+					if (next.done) {
+						return next.value;
+					}
 
-          yield next.value
-        }
-      } catch (error) {
-        throw new HarnessWorkerExecutionError(
-          error instanceof Error ? error.message : "worker execution failed",
-          { cause: error },
-        )
-      }
-    },
-  }
-}
+					yield next.value;
+				}
+			} catch (error) {
+				throw new HarnessWorkerExecutionError(error instanceof Error ? error.message : "worker execution failed", {
+					cause: error,
+				});
+			}
+		},
+	};
+};
 
 /**
  * Build a remote HTTP gateway for the standalone Harness Worker service.
@@ -127,102 +117,94 @@ export const createLocalHarnessWorkerGateway = ({
  * worker only receives a prepared run job and streams execution events back.
  */
 export const createRemoteHarnessWorkerGateway = ({
-  baseUrl = process.env.MANAGED_AGENT_WORKER_BASE_URL ??
-    "http://127.0.0.1:4000",
-  fetchImpl = fetch,
+	baseUrl = process.env.MANAGED_AGENT_WORKER_BASE_URL ?? "http://127.0.0.1:4000",
+	fetchImpl = fetch,
 }: {
-  baseUrl?: string
-  fetchImpl?: typeof fetch
+	baseUrl?: string;
+	fetchImpl?: typeof fetch;
 } = {}): HarnessWorkerGateway => {
-  return {
-    async *execute(
-      job: SessionRunJob,
-    ): AsyncGenerator<SessionRunEvent, SessionRunCompletion> {
-      const response = await fetchImpl(
-        new URL("/internal/session-runs", baseUrl).toString(),
-        {
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-          },
-          body: JSON.stringify(job),
-        },
-      )
+	return {
+		async *execute(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion> {
+			const response = await fetchImpl(new URL("/internal/session-runs", baseUrl).toString(), {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+				},
+				body: JSON.stringify(job),
+			});
 
-      if (!response.ok) {
-        let message = `worker request failed with status ${response.status}`
+			if (!response.ok) {
+				let message = `worker request failed with status ${response.status}`;
 
-        try {
-          const payload = (await response.json()) as {
-            error?: { message?: string }
-          }
-          message = payload.error?.message ?? message
-        } catch {
-          // Keep the status-derived message when the worker body is not JSON.
-        }
+				try {
+					const payload = (await response.json()) as {
+						error?: { message?: string };
+					};
+					message = payload.error?.message ?? message;
+				} catch {
+					// Keep the status-derived message when the worker body is not JSON.
+				}
 
-        throw new HarnessWorkerExecutionError(message, {
-          code: "worker_transport_failed",
-        })
-      }
+				throw new HarnessWorkerExecutionError(message, {
+					code: "worker_transport_failed",
+				});
+			}
 
-      const queuedEvents: SessionRunEvent[] = []
-      let completion: SessionRunCompletion = {}
-      let isFinished = false
-      let parsingError: unknown = null
-      let notify: (() => void) | null = null
+			const queuedEvents: SessionRunEvent[] = [];
+			let completion: SessionRunCompletion = {};
+			let isFinished = false;
+			let parsingError: unknown = null;
+			let notify: (() => void) | null = null;
 
-      const waitForNextEvent = () => {
-        return new Promise<void>((resolve) => {
-          notify = resolve
-        })
-      }
+			const waitForNextEvent = () => {
+				return new Promise<void>((resolve) => {
+					notify = resolve;
+				});
+			};
 
-      void parseSseFrames(response, (event) => {
-        if (event.type === "run.completed") {
-          completion = event.data
-        } else {
-          queuedEvents.push(event)
-        }
+			void parseSseFrames(response, (event) => {
+				if (event.type === "run.completed") {
+					completion = event.data;
+				} else {
+					queuedEvents.push(event);
+				}
 
-        notify?.()
-        notify = null
-      })
-        .catch((error: unknown) => {
-          parsingError = error
-        })
-        .finally(() => {
-          isFinished = true
-          notify?.()
-          notify = null
-        })
+				notify?.();
+				notify = null;
+			})
+				.catch((error: unknown) => {
+					parsingError = error;
+				})
+				.finally(() => {
+					isFinished = true;
+					notify?.();
+					notify = null;
+				});
 
-      while (!isFinished || queuedEvents.length > 0) {
-        if (queuedEvents.length === 0) {
-          await waitForNextEvent()
-          continue
-        }
+			while (!isFinished || queuedEvents.length > 0) {
+				if (queuedEvents.length === 0) {
+					await waitForNextEvent();
+					continue;
+				}
 
-        const nextEvent = queuedEvents.shift()
+				const nextEvent = queuedEvents.shift();
 
-        if (nextEvent) {
-          yield nextEvent
-        }
-      }
+				if (nextEvent) {
+					yield nextEvent;
+				}
+			}
 
-      if (parsingError) {
-        throw new HarnessWorkerExecutionError(
-          parsingError instanceof Error
-            ? parsingError.message
-            : "worker stream parsing failed",
-          {
-            code: "worker_stream_failed",
-            cause: parsingError,
-          },
-        )
-      }
+			if (parsingError) {
+				throw new HarnessWorkerExecutionError(
+					parsingError instanceof Error ? parsingError.message : "worker stream parsing failed",
+					{
+						code: "worker_stream_failed",
+						cause: parsingError,
+					},
+				);
+			}
 
-      return completion
-    },
-  }
-}
+			return completion;
+		},
+	};
+};

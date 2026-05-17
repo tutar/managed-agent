@@ -1,4 +1,4 @@
-import type { SessionEntry } from "./entry-factory.js"
+import type { SessionEntry } from "./entry-factory.js";
 
 /**
  * Transcript read contracts for the control plane.
@@ -8,10 +8,10 @@ import type { SessionEntry } from "./entry-factory.js"
  * platform's session-detail DTO shape.
  */
 export type TranscriptReadInput = {
-  sessionId: string
-  piSessionFile?: string
-}
+	sessionId: string;
+	piSessionFile?: string;
+};
 
 export interface TranscriptReader {
-  readSessionEntries(input: TranscriptReadInput): Promise<SessionEntry[]>
+	readSessionEntries(input: TranscriptReadInput): Promise<SessionEntry[]>;
 }

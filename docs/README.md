@@ -35,6 +35,7 @@ docs/
 |---|---|---|
 | [design/minimal-architecture.zh-CN.md](./design/minimal-architecture.zh-CN.md) | 当前 MVP 的服务分层、运行约束、存储边界和实现顺序 | 需要先看整体架构总览时 |
 | [design/technical-design.zh-CN.md](./design/technical-design.zh-CN.md) | 运行时对象、生命周期、worker/harness/sandbox 协作方式 | 进入实现细节或需要收敛边界时 |
+| [design/auth-design.zh-CN.md](./design/auth-design.zh-CN.md) | 注册/登录、`login session` 与 `agent session` 的技术边界和接入方式 | 开始设计 auth 落地方案时 |
 
 ## API & Storage
 
@@ -67,6 +68,7 @@ docs/
 4. `proposals/04-multi-tenant-feature-proposal.zh-CN.md`
 5. `design/minimal-architecture.zh-CN.md`
 6. `design/technical-design.zh-CN.md`
-7. `interfaces/api-interface-draft.zh-CN.md`
-8. `interfaces/workspace-service-backend-project-storage-design.zh-CN.md`
-9. `status/implementation-status.md`
+7. `design/auth-design.zh-CN.md`
+8. `interfaces/api-interface-draft.zh-CN.md`
+9. `interfaces/workspace-service-backend-project-storage-design.zh-CN.md`
+10. `status/implementation-status.md`

@@ -5,6 +5,7 @@ coverage/
 *.log
 
 .codex
+.vscode/
 .env
 .tmp/
 tmp/

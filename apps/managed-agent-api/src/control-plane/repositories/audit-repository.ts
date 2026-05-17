@@ -6,13 +6,13 @@
  * file or database layout.
  */
 export type PersistedAuditRecord = {
-  action: string
-  sessionId: string
-  userId: string
-  recordedAt: string
-}
+	action: string;
+	sessionId: string;
+	userId: string;
+	recordedAt: string;
+};
 
 export interface AuditRepository {
-  append(record: PersistedAuditRecord): Promise<void>
-  list(): Promise<PersistedAuditRecord[]>
+	append(record: PersistedAuditRecord): Promise<void>;
+	list(): Promise<PersistedAuditRecord[]>;
 }

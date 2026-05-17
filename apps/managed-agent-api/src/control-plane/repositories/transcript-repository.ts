@@ -1,4 +1,4 @@
-import type { SessionEntry } from "../entry-factory.js"
+import type { SessionEntry } from "../entry-factory.js";
 
 /**
  * Transcript persistence contracts.
@@ -7,12 +7,12 @@ import type { SessionEntry } from "../entry-factory.js"
  * backends can map entries to their own table or document family.
  */
 export type SessionTranscriptRecord = {
-  sessionId: string
-  entries: SessionEntry[]
-}
+	sessionId: string;
+	entries: SessionEntry[];
+};
 
 export interface TranscriptRepository {
-  createTranscript(record: SessionTranscriptRecord): Promise<void>
-  getTranscript(sessionId: string): Promise<SessionTranscriptRecord | null>
-  updateTranscript(record: SessionTranscriptRecord): Promise<void>
+	createTranscript(record: SessionTranscriptRecord): Promise<void>;
+	getTranscript(sessionId: string): Promise<SessionTranscriptRecord | null>;
+	updateTranscript(record: SessionTranscriptRecord): Promise<void>;
 }

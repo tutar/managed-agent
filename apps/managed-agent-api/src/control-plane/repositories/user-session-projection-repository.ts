@@ -1,4 +1,4 @@
-import type { SessionListItemRecord } from "./session-repository.js"
+import type { SessionListItemRecord } from "./session-repository.js";
 
 /**
  * Recent-session projection contracts.
@@ -7,14 +7,8 @@ import type { SessionListItemRecord } from "./session-repository.js"
  * session aggregate storage.
  */
 export interface UserSessionProjectionRepository {
-  createUserSessionProjection(
-    userId: string,
-    record: SessionListItemRecord,
-  ): Promise<void>
-  updateUserSessionProjection(
-    userId: string,
-    record: SessionListItemRecord,
-  ): Promise<void>
-  deleteUserSessionProjection(userId: string, sessionId: string): Promise<void>
-  listUserSessions(userId: string): Promise<SessionListItemRecord[]>
+	createUserSessionProjection(userId: string, record: SessionListItemRecord): Promise<void>;
+	updateUserSessionProjection(userId: string, record: SessionListItemRecord): Promise<void>;
+	deleteUserSessionProjection(userId: string, sessionId: string): Promise<void>;
+	listUserSessions(userId: string): Promise<SessionListItemRecord[]>;
 }

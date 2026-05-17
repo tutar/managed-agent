@@ -1,6 +1,6 @@
-import type { SessionExecutor } from "../jobs/session-run-job.js"
-import { createMockSessionExecutor } from "./mock-session-executor.js"
-import { createPiSessionExecutor } from "./pi-session-executor.js"
+import type { SessionExecutor } from "../jobs/session-run-job.js";
+import { createMockSessionExecutor } from "./mock-session-executor.js";
+import { createPiSessionExecutor } from "./pi-session-executor.js";
 
 /**
  * Select the worker runtime implementation for the current process.
@@ -10,9 +10,9 @@ import { createPiSessionExecutor } from "./pi-session-executor.js"
  * letting us wire the real SDK path end to end.
  */
 export const createSessionExecutor = (): SessionExecutor => {
-  if (process.env.MANAGED_AGENT_RUNTIME === "pi") {
-    return createPiSessionExecutor()
-  }
+	if (process.env.MANAGED_AGENT_RUNTIME === "pi") {
+		return createPiSessionExecutor();
+	}
 
-  return createMockSessionExecutor()
-}
+	return createMockSessionExecutor();
+};
