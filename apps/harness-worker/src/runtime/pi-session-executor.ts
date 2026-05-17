@@ -73,74 +73,6 @@ const parseRequestedModel = (
   }
 }
 
-const hasTextContent = (
-  value: unknown,
-): value is { type: "text"; text: string } => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "type" in value &&
-    value.type === "text" &&
-    "text" in value &&
-    typeof value.text === "string"
-  )
-}
-
-const hasPartialAssistantText = (
-  value: unknown,
-): value is {
-  partial: {
-    content?: unknown
-  }
-} => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "partial" in value &&
-    typeof value.partial === "object" &&
-    value.partial !== null
-  )
-}
-
-const hasAssistantRole = (
-  value: unknown,
-): value is { role: "assistant"; content?: unknown } => {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "role" in value &&
-    value.role === "assistant"
-  )
-}
-
-const readFinalAssistantText = (messages: unknown[]) => {
-  const assistantMessages = messages.filter(hasAssistantRole)
-  const lastAssistant = assistantMessages.at(-1)
-
-  if (!lastAssistant || !Array.isArray(lastAssistant.content)) {
-    return ""
-  }
-
-  return lastAssistant.content
-    .filter(hasTextContent)
-    .map((item) => item.text)
-    .join("")
-}
-
-const readPartialAssistantText = (value: unknown) => {
-  if (
-    !hasPartialAssistantText(value) ||
-    !Array.isArray(value.partial.content)
-  ) {
-    return ""
-  }
-
-  return value.partial.content
-    .filter(hasTextContent)
-    .map((item) => item.text)
-    .join("")
-}
-
 const readToolCallId = (event: AgentSessionEvent, fallback: string) => {
   if (
     "toolCallId" in event &&
@@ -159,46 +91,6 @@ const toStructuredText = (value: unknown) => {
   }
 
   return JSON.stringify(value)
-}
-
-/**
- * Normalize provider-emitted text chunks into a true append-only suffix.
- *
- * Some providers emit overlapping or cumulative fragments instead of strict
- * token deltas. The managed-agent SSE contract, however, requires each
- * `final.output.delta` frame to be append-only so downstream consumers do not
- * need transport-level deduplication.
- */
-const toAppendOnlyDelta = (accumulatedText: string, incomingText: string) => {
-  if (incomingText.length === 0) {
-    return ""
-  }
-
-  if (accumulatedText.length === 0) {
-    return incomingText
-  }
-
-  if (incomingText.startsWith(accumulatedText)) {
-    return incomingText.slice(accumulatedText.length)
-  }
-
-  if (accumulatedText.endsWith(incomingText)) {
-    return ""
-  }
-
-  const maxOverlapLength = Math.min(accumulatedText.length, incomingText.length)
-
-  for (
-    let overlapLength = maxOverlapLength;
-    overlapLength > 0;
-    overlapLength -= 1
-  ) {
-    if (accumulatedText.endsWith(incomingText.slice(0, overlapLength))) {
-      return incomingText.slice(overlapLength)
-    }
-  }
-
-  return incomingText
 }
 
 const createDefaultDependencies = (): PiSessionExecutorDependencies => {
@@ -281,35 +173,20 @@ export const createPiSessionExecutor = (
           event.type === "message_update" &&
           event.assistantMessageEvent.type === "text_delta"
         ) {
-          /**
-           * Provider `delta` payloads are not guaranteed to be strict append-only
-           * tokens. DeepSeek can emit corrective or overlapping fragments while
-           * `partial` still carries the authoritative assistant text snapshot.
-           * We therefore derive SSE output from the growing `partial` text, not
-           * from the raw `delta`, so web clients receive one append-only stream.
-           */
-          const partialAssistantText = readPartialAssistantText(
-            event.assistantMessageEvent,
-          )
-          const normalizedDelta = toAppendOnlyDelta(
-            streamedFinalText,
-            partialAssistantText.length > 0
-              ? partialAssistantText
-              : event.assistantMessageEvent.delta,
-          )
+          const delta = event.assistantMessageEvent.delta
 
-          if (normalizedDelta.length === 0) {
+          if (!delta || delta.length === 0) {
             return
           }
 
-          streamedFinalText += normalizedDelta
+          streamedFinalText += delta
           bufferedEvents.push({
             type: "final.output.delta",
             data: {
               sessionId: job.sessionId,
               entryId: job.finalEntryId,
               parentId: job.processEntryId,
-              text: normalizedDelta,
+              text: delta,
             },
           })
         }
@@ -374,22 +251,6 @@ export const createPiSessionExecutor = (
 
         for (const event of bufferedEvents) {
           yield event
-        }
-
-        const finalText = readFinalAssistantText(session.state.messages)
-
-        const trailingDelta = toAppendOnlyDelta(streamedFinalText, finalText)
-
-        if (trailingDelta.length > 0) {
-          yield {
-            type: "final.output.delta",
-            data: {
-              sessionId: job.sessionId,
-              entryId: job.finalEntryId,
-              parentId: job.processEntryId,
-              text: trailingDelta,
-            },
-          }
         }
 
         yield {
