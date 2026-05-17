@@ -22,7 +22,7 @@ import { createTriggerService } from "./control-plane/trigger-service.js"
  * keeps the framework runnable while already exercising versioned metadata
  * persistence and the selectable worker runtime boundary.
  */
-const port = Number(process.env.PORT ?? "3000")
+const port = Number(process.env.PORT ?? "4173")
 const workerTransport = process.env.MANAGED_AGENT_WORKER_TRANSPORT ?? "http"
 const databaseUrl = process.env.MANAGED_AGENT_DATABASE_URL
 

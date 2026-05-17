@@ -29,9 +29,15 @@ npm run dev:all:pi
 
 固定本地端口约定：
 
-- `managed-agent-api`: `3000`
+- `managed-agent-api`: `4173`
 - `harness-worker`: `4000`
-- `web-ui`: `4173`
+- `web-ui`: `3000`
+
+固定本地数据根约定：
+
+- 统一使用仓库根 `.managed-agent/mnt`
+- 不再使用 `apps/managed-agent-api/.managed-agent`
+- 不再使用 `apps/harness-worker/.managed-agent`
 
 分开启动也可以：
 
@@ -49,6 +55,12 @@ npm run start:web-ui
 
 ```bash
 npm run db:up
+```
+
+如需清空 transcript、历史 session metadata 和本地 PostgreSQL 中的 session 数据：
+
+```bash
+npm run reset:local-state
 ```
 
 当前默认本地数据库参数：
@@ -72,7 +84,7 @@ npm run db:up
 示例请求：
 
 ```bash
-curl -N -X POST 'http://127.0.0.1:3000/sessions?userId=demo-user' \
+curl -N -X POST 'http://127.0.0.1:4173/sessions?userId=demo-user' \
   -H 'Content-Type: application/json' \
   --data '{"model":"deepseek/deepseek-v4-pro","thinkingLevel":"medium","input":{"content":[{"type":"text","text":"分析当前项目结构"}]}}'
 ```
