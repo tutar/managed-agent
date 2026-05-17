@@ -1,5 +1,11 @@
 # Managed Agent Session 追踪功能提案
 
+- `Status`: active
+- `Owner`: TBD
+- `Related Design`:
+  - [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
+  - [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)
+
 ## 概述
 
 本文定义后续要补充的 `session` 追踪能力。
@@ -163,10 +169,10 @@
 
 后续如果继续展开，建议新增：
 
-- `managed-agent-session-observability-design.zh-CN.md`
+- `session-observability-design.zh-CN.md`
 
 相关文档：
 
-- [01-managed-agent-feature-proposal.zh-CN.md](./01-managed-agent-feature-proposal.zh-CN.md)
-- [managed-agent-minimal-architecture.zh-CN.md](./managed-agent-minimal-architecture.zh-CN.md)
-- [managed-agent-technical-design.zh-CN.md](./managed-agent-technical-design.zh-CN.md)
+- [01-feature-proposal.zh-CN.md](./01-feature-proposal.zh-CN.md)
+- [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
+- [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)

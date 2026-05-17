@@ -1,40 +1,72 @@
-# Managed Agent 文档索引
+# Managed Agent Docs
 
-当前 `docs/` 目录只保留中文主线文档，按“为什么做、做成什么、怎么落地、接口怎么暴露、存储怎么分层”的顺序组织。
+`docs/` 目录按“为什么做、怎么设计、接口怎么暴露、当前做到哪里”组织。这里是完整导航页，不再承担 README 或项目骨架说明的职责。
 
-## 文档关系
+## Layout
+
+```text
+docs/
+  proposals/
+  design/
+  interfaces/
+  status/
+  archive/
+```
+
+## Overview
+
+| 文档 | 什么时候读 |
+|---|---|
+| [../README.md](../README.md) | 第一次打开仓库，想快速理解项目定位、本地启动方式和 `managed` 亮点时 |
+| [../CONTRIBUTING.md](../CONTRIBUTING.md) | 需要理解仓库结构、服务边界、放代码/文档/测试的位置时 |
+
+## Feature Proposals
 
 | 文档 | 作用 | 什么时候读 |
 |---|---|---|
-| [01-managed-agent-feature-proposal.zh-CN.md](./01-managed-agent-feature-proposal.zh-CN.md) | 定义为什么要做 managed agent，以及为什么采用 pi 的 SDK + extensions 路线 | 第一次了解方案时 |
-| [02-managed-agent-session-observability-feature-proposal.zh-CN.md](./02-managed-agent-session-observability-feature-proposal.zh-CN.md) | 定义 session 追踪为什么要单独做，以及为什么不应塞进 session 本体 | 需要设计观测、统计、运营视图时 |
-| [03-managed-agent-multi-tenant-feature-proposal.zh-CN.md](./03-managed-agent-multi-tenant-feature-proposal.zh-CN.md) | 定义下一阶段多租户支持为什么要单独做，以及哪些对象需要补租户边界 | 需要设计租户隔离与策略层时 |
-| [managed-agent-minimal-architecture.zh-CN.md](./managed-agent-minimal-architecture.zh-CN.md) | 定义当前已确认的 MVP 架构边界与约束 | 需要看产品与架构总览时 |
-| [managed-agent-technical-design.zh-CN.md](./managed-agent-technical-design.zh-CN.md) | 定义运行时对象、生命周期、worker/harness/sandbox 协作方式 | 需要进入实现细节时 |
-| [managed-agent-api-interface-draft.zh-CN.md](./managed-agent-api-interface-draft.zh-CN.md) | 定义 MVP-only 的服务端接口、SSE 事件与最小数据形状 | 需要设计 API 或前后端协议时 |
-| [workspace-service-backend-project-storage-design.zh-CN.md](./workspace-service-backend-project-storage-design.zh-CN.md) | 定义 workspace 文件访问、Firecracker、rclone 挂载和高速热盘分层 | 需要设计文件/存储/执行平面时 |
+| [proposals/01-feature-proposal.zh-CN.md](./proposals/01-feature-proposal.zh-CN.md) | 为什么要做 managed agent，以及为什么沿用 `pi` 的 SDK + extensions 路线 | 第一次了解产品和技术方向时 |
+| [proposals/02-session-observability-feature-proposal.zh-CN.md](./proposals/02-session-observability-feature-proposal.zh-CN.md) | 为什么 session observability 要单独立项，且不应塞进 session 本体 | 设计观测、运营、统计视图时 |
+| [proposals/03-auth-foundation-feature-proposal.zh-CN.md](./proposals/03-auth-foundation-feature-proposal.zh-CN.md) | 为什么注册/登录必须先于多租户，以及当前阶段最小身份能力边界 | 设计真实用户身份和登录态时 |
+| [proposals/04-multi-tenant-feature-proposal.zh-CN.md](./proposals/04-multi-tenant-feature-proposal.zh-CN.md) | 多租户为什么单独立项，以及哪些对象和策略要补 `tenantId` | 设计租户隔离和企业级扩展时 |
 
-## 统一约束
+## Architecture & Technical Design
 
-所有文档均以以下前提为准：
+| 文档 | 作用 | 什么时候读 |
+|---|---|---|
+| [design/minimal-architecture.zh-CN.md](./design/minimal-architecture.zh-CN.md) | 当前 MVP 的服务分层、运行约束、存储边界和实现顺序 | 需要先看整体架构总览时 |
+| [design/technical-design.zh-CN.md](./design/technical-design.zh-CN.md) | 运行时对象、生命周期、worker/harness/sandbox 协作方式 | 进入实现细节或需要收敛边界时 |
 
-- 运行时依赖 `pi` 发布包，而不是直接依赖本仓库 `packages/*` 源码路径
-- 通过 `pi` 的 SDK 和 `extensions` 两种扩展方式实现 managed agent
-- MVP 不做 `pi` 源码定制或状态模型修改
-- 不单独提供恢复接口；用户继续提交 prompt 即可
-- 执行沙箱固定为 Firecracker MicroVM
-- 持久文件存储通过 rclone 挂载暴露到 `/mnt/*`
-- 热 workspace 使用高速本地磁盘
-- `mcp-client` 是外部能力接入方式
+## API & Storage
 
-## 阅读建议
+| 文档 | 作用 | 什么时候读 |
+|---|---|---|
+| [interfaces/api-interface-draft.zh-CN.md](./interfaces/api-interface-draft.zh-CN.md) | MVP 的外部 HTTP/SSE 契约、事件语义和最小数据模型 | 设计 API、前后端联调或回顾接口约束时 |
+| [interfaces/workspace-service-backend-project-storage-design.zh-CN.md](./interfaces/workspace-service-backend-project-storage-design.zh-CN.md) | `/mnt/*` 语义、Firecracker 执行面、热盘和 durable storage 分层 | 设计文件、存储、执行平面时 |
 
-推荐顺序：
+## Delivery Status
 
-1. `01-managed-agent-feature-proposal.zh-CN.md`
-2. `02-managed-agent-session-observability-feature-proposal.zh-CN.md`
-3. `03-managed-agent-multi-tenant-feature-proposal.zh-CN.md`
-4. `managed-agent-minimal-architecture.zh-CN.md`
-5. `managed-agent-technical-design.zh-CN.md`
-6. `managed-agent-api-interface-draft.zh-CN.md`
-7. `workspace-service-backend-project-storage-design.zh-CN.md`
+| 文档 | 作用 | 什么时候读 |
+|---|---|---|
+| [status/implementation-status.md](./status/implementation-status.md) | 当前阶段完成状态、下一阶段重点和 proposal 对应关系 | 需要判断项目做到哪里、下一步做什么时 |
+
+## Shared Constraints
+
+所有文档均以这些前提为准：
+
+- 运行时依赖 `pi` 发布包，而不是直接耦合本仓库上游源码路径
+- 平台能力优先放在 control plane、storage、sandbox、audit 这些 managed 外层
+- transcript durable truth 在 transcript 文件，metadata/projection/audit durable truth 在 PostgreSQL
+- 执行沙箱目标固定为 Firecracker MicroVM
+- 持久挂载语义固定为 `/mnt/*`，实际根路径由 `MANAGED_AGENT_MOUNT_ROOT` 决定
+
+## Suggested Reading Order
+
+1. `proposals/01-feature-proposal.zh-CN.md`
+2. `proposals/02-session-observability-feature-proposal.zh-CN.md`
+3. `proposals/03-auth-foundation-feature-proposal.zh-CN.md`
+4. `proposals/04-multi-tenant-feature-proposal.zh-CN.md`
+5. `design/minimal-architecture.zh-CN.md`
+6. `design/technical-design.zh-CN.md`
+7. `interfaces/api-interface-draft.zh-CN.md`
+8. `interfaces/workspace-service-backend-project-storage-design.zh-CN.md`
+9. `status/implementation-status.md`

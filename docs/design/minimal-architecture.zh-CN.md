@@ -1,5 +1,16 @@
 # Managed Agent 平台最小可用架构说明书（中文版）
 
+- `Status`: active
+- `Owner`: TBD
+- `Related Proposals`:
+  - [../proposals/01-feature-proposal.zh-CN.md](../proposals/01-feature-proposal.zh-CN.md)
+  - [../proposals/02-session-observability-feature-proposal.zh-CN.md](../proposals/02-session-observability-feature-proposal.zh-CN.md)
+  - [../proposals/03-auth-foundation-feature-proposal.zh-CN.md](../proposals/03-auth-foundation-feature-proposal.zh-CN.md)
+  - [../proposals/04-multi-tenant-feature-proposal.zh-CN.md](../proposals/04-multi-tenant-feature-proposal.zh-CN.md)
+- `Related Interfaces`:
+  - [../interfaces/api-interface-draft.zh-CN.md](../interfaces/api-interface-draft.zh-CN.md)
+  - [../interfaces/workspace-service-backend-project-storage-design.zh-CN.md](../interfaces/workspace-service-backend-project-storage-design.zh-CN.md)
+
 ## 1. 文档目标
 
 本文定义一个基于 `coding-agent` SDK 的 Managed Agent 平台最小可用架构（MVP）。
