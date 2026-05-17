@@ -104,7 +104,7 @@ const createDefaultDependencies = (): PiSessionExecutorDependencies => {
 			});
 		},
 		getCwd() {
-			return process.cwd();
+			return resolveManagedAgentMountPaths().workspaceRoot;
 		},
 	};
 };
@@ -127,6 +127,7 @@ export const createPiSessionExecutor = (
 			const parsedModel = parseRequestedModel(job.model);
 			const selectedModel = parsedModel ? modelRegistry.find(parsedModel.provider, parsedModel.modelId) : undefined;
 			const sessionDir = join(resolveManagedAgentMountPaths().transcriptsRoot, "pi-sessions");
+			await dependencies.ensureSessionDir(cwd);
 			await dependencies.ensureSessionDir(sessionDir);
 			const sessionManager = job.piSessionFile
 				? dependencies.openSessionManager(job.piSessionFile, sessionDir, cwd)

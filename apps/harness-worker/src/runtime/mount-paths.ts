@@ -15,6 +15,7 @@ export type ManagedAgentMountPaths = {
 	toolResultsRoot: string;
 	skillsRoot: string;
 	extensionsRoot: string;
+	workspaceRoot: string;
 };
 
 /**
@@ -36,5 +37,6 @@ export const resolveManagedAgentMountPaths = ({
 		toolResultsRoot: join(mountRoot, "user-data", "tool_results"),
 		skillsRoot: join(mountRoot, "skills"),
 		extensionsRoot: join(mountRoot, "extensions"),
+		workspaceRoot: join(mountRoot, "workspace"),
 	};
 };
