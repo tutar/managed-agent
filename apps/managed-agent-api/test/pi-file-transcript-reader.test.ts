@@ -243,9 +243,9 @@ test("pi file transcript reader collapses tool-use assistant chains into one fin
         id: "msg_assistant_tool_use",
         parentId: "msg_user_1",
         timestamp: "2026-05-17T00:34:59.495Z",
-        stopReason: "toolUse",
         message: {
           role: "assistant",
+          stopReason: "toolUse",
           content: [
             { type: "thinking", thinking: "先检查项目内是否有 DeepSeek。" },
             {

@@ -24,8 +24,8 @@ type PiSessionJsonlRecord =
 				toolCallId?: string;
 				toolName?: string;
 				isError?: boolean;
+				stopReason?: string;
 			};
-			stopReason?: string;
 	  };
 
 type ManagedTranscriptRecord =
@@ -453,7 +453,7 @@ export const createPiFileTranscriptReader = ({
 				const processEntryId = `pi_process_${parsed.id}`;
 				const assistantEntryId = `pi_assistant_${parsed.id}`;
 
-				if (parsed.stopReason === "toolUse") {
+				if (parsed.message.stopReason === "toolUse") {
 					const processContent = [...toProcessContent(messageContent)];
 					const assistantPreamble = toAssistantPreamble(messageContent);
 
@@ -467,7 +467,10 @@ export const createPiFileTranscriptReader = ({
 					processContent.push(...toToolCallContent(messageContent));
 					entries.push({
 						id: processEntryId,
-						parentId: typeof userParentId === "string" ? userParentId : `pi_orphan_${parsed.id}`,
+						parentId:
+							typeof userParentId === "string"
+								? userParentId
+								: (chainedProcessEntryId ?? `pi_orphan_${parsed.id}`),
 						createdAt,
 						messageType: "process",
 						content: processContent,
@@ -496,7 +499,8 @@ export const createPiFileTranscriptReader = ({
 
 				entries.push({
 					id: processEntryId,
-					parentId: typeof userParentId === "string" ? userParentId : `pi_orphan_${parsed.id}`,
+					parentId:
+						typeof userParentId === "string" ? userParentId : (chainedProcessEntryId ?? `pi_orphan_${parsed.id}`),
 					createdAt,
 					messageType: "process",
 					content: toProcessContent(messageContent),
