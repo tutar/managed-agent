@@ -1,5 +1,12 @@
 # Managed Agent 功能提案
 
+- `Status`: active
+- `Owner`: TBD
+- `Related Design`:
+  - [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
+  - [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)
+  - [../interfaces/api-interface-draft.zh-CN.md](../interfaces/api-interface-draft.zh-CN.md)
+
 ## 概述
 
 本文定义为什么要在现有 `pi` 能力之上构建 managed agent，以及为什么当前路线应当是：
@@ -123,6 +130,6 @@ MVP 至少需要：
 
 具体架构见：
 
-- [managed-agent-minimal-architecture.zh-CN.md](./managed-agent-minimal-architecture.zh-CN.md)
-- [managed-agent-technical-design.zh-CN.md](./managed-agent-technical-design.zh-CN.md)
-- [managed-agent-api-interface-draft.zh-CN.md](./managed-agent-api-interface-draft.zh-CN.md)
+- [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
+- [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)
+- [../interfaces/api-interface-draft.zh-CN.md](../interfaces/api-interface-draft.zh-CN.md)

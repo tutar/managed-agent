@@ -1,5 +1,15 @@
 # Managed Agent API 接口草案
 
+- `Status`: active
+- `Owner`: TBD
+- `Source Proposals`:
+  - [../proposals/01-feature-proposal.zh-CN.md](../proposals/01-feature-proposal.zh-CN.md)
+  - [../proposals/03-auth-foundation-feature-proposal.zh-CN.md](../proposals/03-auth-foundation-feature-proposal.zh-CN.md)
+  - [../proposals/04-multi-tenant-feature-proposal.zh-CN.md](../proposals/04-multi-tenant-feature-proposal.zh-CN.md)
+- `Source Design`:
+  - [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
+  - [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)
+
 ## 概述
 
 本文定义当前 MVP 的最小服务端接口集合。
@@ -461,8 +471,8 @@ data: {"sessionId":"sess_123","entryId":"c3d4e5f6","parentId":"b2c3d4e5","text":
 
 更高层约束见：
 
-- [managed-agent-minimal-architecture.zh-CN.md](./managed-agent-minimal-architecture.zh-CN.md)
+- [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
 
 运行时实现见：
 
-- [managed-agent-technical-design.zh-CN.md](./managed-agent-technical-design.zh-CN.md)
+- [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)

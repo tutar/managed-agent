@@ -1,8 +1,14 @@
 # Managed Agent 多租户支持功能提案
 
+- `Status`: active
+- `Owner`: TBD
+- `Related Design`:
+  - [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
+  - [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)
+
 ## 概述
 
-本文定义在当前单用户/单租户前提之上，下一阶段如何为 managed agent 增加多租户支持。
+本文定义在当前单用户前提之上，下一阶段如何为 managed agent 增加多租户支持。
 
 这里的“多租户”重点不是把现有模型简单加一个 `tenantId` 字段，而是明确：
 
@@ -10,6 +16,8 @@
 - 哪些配置需要按租户覆盖
 - 哪些调用链和观测数据必须带租户上下文
 - 当前基于 `pi` 的架构要在哪些边界上补齐租户语义
+
+这份提案建立在“用户已具备真实注册/登录能力”的前提上，而不是继续沿用匿名用户或硬编码 `demo-user`。
 
 ## 提案结论
 
@@ -31,7 +39,7 @@
 - `user_sessions` 是轻量列表投影
 - `trigger` 会创建新 session 并注入首次 prompt
 
-这些前提在单租户下足够清晰，但一旦进入多租户，至少会新增 4 类问题：
+这些前提在单用户下足够清晰，但一旦进入多租户，至少会新增 4 类问题：
 
 1. 资源归属  
    同一个 `sessionId`、`triggerId`、`mcp-client` 配置、skills/extensions 安装记录，必须知道属于哪个租户。
@@ -125,16 +133,15 @@ tenantId -> userId -> sessionId
 | worker 重建时带入租户上下文 | `Harness Worker` |
 | 租户级 `mcp-client` / skills / extensions 可见性 | `Managed Agent Control Plane` + `ResourceLoader` / `McpClientManager` |
 
-## 为什么应该排在 session 追踪之前
+## 为什么应该排在 session 追踪之后
 
-按落地顺序看，多租户比 session 追踪更早影响核心边界：
+按文档顺序看，这一阶段的前置依赖已经变成：
 
-- 数据模型要先决定是否加 `tenantId`
-- API 鉴权和查询边界要先收紧
-- 控制平面对象职责要先知道是不是租户感知
-- worker 重建时需要先知道租户上下文怎么注入
+- 先明确 session 观测边界
+- 先补齐真实用户注册/登录能力
+- 再决定哪些模型和查询需要补 `tenantId`
 
-而 session 追踪更多是观测层增强，可以建立在多租户边界确定之后。
+也就是说，多租户现在不再是“比身份更基础”的问题，而是建立在真实 `userId` 已经存在之后的下一层隔离能力。
 
 ## 后续文档关系
 
@@ -146,10 +153,11 @@ tenantId -> userId -> sessionId
 
 后续如果继续展开，建议新增：
 
-- `managed-agent-multi-tenant-design.zh-CN.md`
+- `multi-tenant-design.zh-CN.md`
 
 相关文档：
 
-- [01-managed-agent-feature-proposal.zh-CN.md](./01-managed-agent-feature-proposal.zh-CN.md)
-- [managed-agent-minimal-architecture.zh-CN.md](./managed-agent-minimal-architecture.zh-CN.md)
-- [managed-agent-technical-design.zh-CN.md](./managed-agent-technical-design.zh-CN.md)
+- [01-feature-proposal.zh-CN.md](./01-feature-proposal.zh-CN.md)
+- [03-auth-foundation-feature-proposal.zh-CN.md](./03-auth-foundation-feature-proposal.zh-CN.md)
+- [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
+- [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)

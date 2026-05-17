@@ -1,5 +1,13 @@
 # Workspace Service Backend 存储设计
 
+- `Status`: active
+- `Owner`: TBD
+- `Source Proposals`:
+  - [../proposals/01-feature-proposal.zh-CN.md](../proposals/01-feature-proposal.zh-CN.md)
+- `Source Design`:
+  - [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
+  - [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)
+
 ## 概述
 
 本文只讨论 managed agent 的文件访问、存储分层和执行挂载设计。
@@ -162,8 +170,8 @@ durable 挂载层的标准路径：
 
 整体架构见：
 
-- [managed-agent-minimal-architecture.zh-CN.md](./managed-agent-minimal-architecture.zh-CN.md)
+- [../design/minimal-architecture.zh-CN.md](../design/minimal-architecture.zh-CN.md)
 
 运行时协作见：
 
-- [managed-agent-technical-design.zh-CN.md](./managed-agent-technical-design.zh-CN.md)
+- [../design/technical-design.zh-CN.md](../design/technical-design.zh-CN.md)
