@@ -12,7 +12,11 @@ import type { SessionExecutor } from "../../../harness-worker/src/jobs/session-r
 import { createMockSessionExecutor } from "../../../harness-worker/src/runtime/mock-session-executor.js"
 import { createMockTranscriptStore } from "../../../harness-worker/src/runtime/mock-transcript-store.js"
 import { createLocalHarnessWorkerGateway } from "../../../harness-worker/src/session-worker-gateway.js"
-import { createHttpHandler } from "../../src/api-channel/http-server.js"
+import { createApiApp } from "../../src/api-channel/fastify-app.js"
+import { createAuthService } from "../../src/auth/auth-service.js"
+import { createCurrentUserResolver } from "../../src/auth/current-user-resolver.js"
+import { createPostgresAuthRepository } from "../../src/auth/postgres-auth-repository.js"
+import { createSessionCookieManager } from "../../src/auth/session-cookie-manager.js"
 import { createAuditService } from "../../src/control-plane/audit-service.js"
 import { createActiveSessionRegistry } from "../../src/control-plane/active-session-registry.js"
 import {
@@ -174,10 +178,20 @@ export const createTestControlPlane = async ({
       transcriptsRoot,
     }),
   })
+  const authRepository = createPostgresAuthRepository({ db })
+  const authService = createAuthService({ authRepository })
+  await authService.ensureDevelopmentUser({
+    username: "agentos",
+    password: "agentos",
+  })
   const auditRepository = createPostgresAuditRepository({ db })
   const auditService = createAuditService({ auditRepository })
   const eventPublisher = createEventPublisher()
   const activeSessionRegistry = createActiveSessionRegistry()
+  const sessionCookieManager = createSessionCookieManager()
+  const currentUserResolver = createCurrentUserResolver({
+    authService,
+  })
   const workerGateway = createLocalHarnessWorkerGateway({
     executor:
       executor ??
@@ -205,10 +219,13 @@ export const createTestControlPlane = async ({
     auditService,
     managedSessionService,
     triggerService: createTriggerService(),
-    createHandler() {
-      return createHttpHandler({
+    async createApp() {
+      return createApiApp({
         managedSessionService,
         triggerService: createTriggerService(),
+        authService,
+        currentUserResolver,
+        sessionCookieManager,
       })
     },
     async close() {

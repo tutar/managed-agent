@@ -12,6 +12,7 @@ servers:
     description: Local development server
 tags:
   - name: Health
+  - name: Auth
   - name: Sessions
   - name: Triggers
 paths:
@@ -27,11 +28,117 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register one personal user account
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "200":
+          description: User registered and current authenticated user returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Create one cookie-backed login session
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login session established and current authenticated user returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Invalidate the current login session
+      operationId: logoutUser
+      security:
+        - SessionCookieAuth: []
+      responses:
+        "200":
+          description: Current login session invalidated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /me:
+    get:
+      tags: [Auth]
+      summary: Read the current authenticated user
+      operationId: getCurrentUser
+      security:
+        - SessionCookieAuth: []
+      responses:
+        "200":
+          description: Current authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentUserResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /me/sessions:
+    get:
+      tags: [Sessions]
+      summary: List recent sessions for the current authenticated user
+      operationId: listCurrentUserSessions
+      description: >
+        Preferred browser-facing recent-session list endpoint. The current
+        authenticated user is resolved from the login session rather than an
+        explicit `userId` path parameter.
+      security:
+        - SessionCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/LimitQuery"
+        - $ref: "#/components/parameters/CursorQuery"
+      responses:
+        "200":
+          description: Recent sessions ordered by latest activity first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSessionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /sessions:
     post:
       tags: [Sessions]
       summary: Create a new session and stream the first assistant response
       operationId: createSession
+      description: >
+        Protected browser-facing endpoint. The authenticated user should be
+        resolved from the login session. The `userId` query parameter remains a
+        development/compatibility path and is not the long-term primary browser
+        identity source.
+      security:
+        - SessionCookieAuth: []
       parameters:
         - $ref: "#/components/parameters/UserIdQuery"
         - $ref: "#/components/parameters/IncludeProcessQuery"
@@ -79,6 +186,11 @@ paths:
       tags: [Sessions]
       summary: Read one session transcript snapshot
       operationId: getSession
+      description: >
+        Protected browser-facing endpoint. Access is scoped to the current
+        authenticated user.
+      security:
+        - SessionCookieAuth: []
       parameters:
         - $ref: "#/components/parameters/SessionIdPath"
       responses:
@@ -96,7 +208,9 @@ paths:
       operationId: updateSession
       description: >
         V1 only supports updating `sessionName`. Running sessions may still be
-        renamed.
+        renamed. Access is scoped to the current authenticated user.
+      security:
+        - SessionCookieAuth: []
       parameters:
         - $ref: "#/components/parameters/SessionIdPath"
       requestBody:
@@ -124,6 +238,9 @@ paths:
         This endpoint performs an irreversible soft delete. Archived sessions no
         longer appear in the recent-session list and their transcript is not
         recoverable through public APIs. Running sessions cannot be deleted.
+        Access is scoped to the current authenticated user.
+      security:
+        - SessionCookieAuth: []
       parameters:
         - $ref: "#/components/parameters/SessionIdPath"
       responses:
@@ -141,7 +258,11 @@ paths:
       description: >
         V1 expects clients to avoid submitting new messages while the session
         status is `running`. The standalone web UI enforces this in the input
-        layer. The server does not yet reject concurrent submissions.
+        layer. The server does not yet reject concurrent submissions. The
+        authenticated user should be resolved from the login session. The
+        `userId` query parameter remains a development/compatibility path.
+      security:
+        - SessionCookieAuth: []
       parameters:
         - $ref: "#/components/parameters/SessionIdPath"
         - $ref: "#/components/parameters/UserIdQuery"
@@ -182,6 +303,11 @@ paths:
       tags: [Sessions]
       summary: Request cancellation for the current in-flight session run
       operationId: cancelSession
+      description: >
+        Protected browser-facing endpoint. Access is scoped to the current
+        authenticated user.
+      security:
+        - SessionCookieAuth: []
       parameters:
         - $ref: "#/components/parameters/SessionIdPath"
       responses:
@@ -200,7 +326,11 @@ paths:
       operationId: listUserSessions
       description: >
         Returns active, non-archived sessions sorted by `lastActiveAt desc,
-        sessionId desc`.
+        sessionId desc`. This path is retained as a transitional/compatibility
+        interface. Browser-facing authenticated clients should prefer
+        `GET /me/sessions`.
+      security:
+        - SessionCookieAuth: []
       parameters:
         - $ref: "#/components/parameters/UserIdPath"
         - $ref: "#/components/parameters/LimitQuery"
@@ -212,11 +342,15 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserSessionsResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /triggers:
     post:
       tags: [Triggers]
       summary: Create a trigger placeholder
       operationId: createTrigger
+      security:
+        - SessionCookieAuth: []
       requestBody:
         required: false
         content:
@@ -230,9 +364,16 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TriggerAcceptedResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 components:
+  securitySchemes:
+    SessionCookieAuth:
+      type: apiKey
+      in: cookie
+      name: managed_agent_session
   parameters:
     SessionIdPath:
       name: sessionId
@@ -251,11 +392,11 @@ components:
       in: query
       required: false
       description: >
-        Browser/user identity. The current local implementation defaults to
-        `demo-user` if omitted.
+        Development/compatibility identity override. Authenticated browser
+        clients should use the login session as the primary user context source
+        instead of passing `userId` explicitly.
       schema:
         type: string
-        default: demo-user
     IncludeProcessQuery:
       name: includeProcess
       in: query
@@ -290,6 +431,16 @@ components:
             error:
               code: bad_request
               message: Invalid request parameters
+    Unauthorized:
+      description: Request requires an authenticated login session
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: unauthorized
+              message: login session required
     SessionNotFound:
       description: Session does not exist or has been archived
       content:
@@ -326,6 +477,49 @@ components:
       required: [ok]
       properties:
         ok:
+          type: boolean
+          const: true
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+    CurrentUserResponse:
+      type: object
+      required: [userId, username, status, createdAt]
+      properties:
+        userId:
+          type: string
+        username:
+          type: string
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastLoginAt:
+          type: [string, "null"]
+          format: date-time
+    LogoutResponse:
+      type: object
+      required: [loggedOut]
+      properties:
+        loggedOut:
           type: boolean
           const: true
     ContentItem:
