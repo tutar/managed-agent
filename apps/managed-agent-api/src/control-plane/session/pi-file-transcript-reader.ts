@@ -1,8 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
-
+import { resolveManagedAgentMountPaths } from "../../infrastructure/storage/mount-paths.js";
 import type { DemoContentItem, InputContentItem, SessionEntry } from "./entry-factory.js";
-import { resolveManagedAgentMountPaths } from "./mount-paths.js";
 import type { TranscriptReader, TranscriptReadInput } from "./transcript-reader.js";
 
 type PiSessionJsonlRecord =

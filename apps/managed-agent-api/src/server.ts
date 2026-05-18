@@ -2,19 +2,20 @@ import {
 	createLocalHarnessWorkerGateway,
 	createRemoteHarnessWorkerGateway,
 } from "../../harness-worker/src/session-worker-gateway.js";
-import { createApiApp } from "./api-channel/fastify-app.js";
-import { createAuthService } from "./auth/auth-service.js";
-import { createCurrentUserResolver } from "./auth/current-user-resolver.js";
-import { createPostgresAuthRepository } from "./auth/postgres-auth-repository.js";
-import { createSessionCookieManager } from "./auth/session-cookie-manager.js";
-import { createActiveSessionRegistry } from "./control-plane/active-session-registry.js";
-import { createAuditRepository } from "./control-plane/audit-repository.js";
-import { createAuditService } from "./control-plane/audit-service.js";
-import { createEventPublisher } from "./control-plane/event-publisher.js";
-import { createManagedSessionService } from "./control-plane/managed-session-service.js";
-import { createManagedAgentDatabase } from "./control-plane/repositories/postgres-database.js";
-import { createSessionRepository } from "./control-plane/session-repository.js";
-import { createTriggerService } from "./control-plane/trigger-service.js";
+import { createApiApp } from "./app/create-app.js";
+import { createAuditRepository } from "./control-plane/audit/audit-repository.js";
+import { createAuditService } from "./control-plane/audit/audit-service.js";
+import { createActiveSessionRegistry } from "./control-plane/session/active-session-registry.js";
+import { createEventPublisher } from "./control-plane/session/event-publisher.js";
+import { createManagedSessionService } from "./control-plane/session/managed-session-service.js";
+import { createSessionRepository } from "./control-plane/session/session-repository.js";
+import { createTriggerService } from "./control-plane/trigger/trigger-service.js";
+import { createAuthService } from "./identity/auth-service.js";
+import { createAuthorizationGuard } from "./identity/authorization-guard.js";
+import { createCurrentUserResolver } from "./identity/identity-resolver.js";
+import { createPostgresAuthRepository } from "./identity/repositories/postgres-auth-repository.js";
+import { createSessionCookieManager } from "./identity/session-cookie-manager.js";
+import { createManagedAgentDatabase } from "./infrastructure/persistence/postgres/database.js";
 
 /**
  * Composition root for the Managed Agent API service.
@@ -63,12 +64,19 @@ const managedSessionService = createManagedSessionService({
 	eventPublisher,
 	workerGateway,
 });
+const authorizationGuard = createAuthorizationGuard({
+	currentUserResolver,
+	sessionCookieManager,
+	managedSessionService: {
+		getSession: managedSessionService.getSession,
+	},
+});
 const triggerService = createTriggerService();
 const app = await createApiApp({
 	managedSessionService,
 	triggerService,
 	authService,
-	currentUserResolver,
+	authorizationGuard,
 	sessionCookieManager,
 });
 

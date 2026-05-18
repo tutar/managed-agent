@@ -12,24 +12,25 @@ import type { SessionExecutor } from "../../../harness-worker/src/jobs/session-r
 import { createMockSessionExecutor } from "../../../harness-worker/src/runtime/mock-session-executor.js"
 import { createMockTranscriptStore } from "../../../harness-worker/src/runtime/mock-transcript-store.js"
 import { createLocalHarnessWorkerGateway } from "../../../harness-worker/src/session-worker-gateway.js"
-import { createApiApp } from "../../src/api-channel/fastify-app.js"
-import { createAuthService } from "../../src/auth/auth-service.js"
-import { createCurrentUserResolver } from "../../src/auth/current-user-resolver.js"
-import { createPostgresAuthRepository } from "../../src/auth/postgres-auth-repository.js"
-import { createSessionCookieManager } from "../../src/auth/session-cookie-manager.js"
-import { createAuditService } from "../../src/control-plane/audit-service.js"
-import { createActiveSessionRegistry } from "../../src/control-plane/active-session-registry.js"
+import { createApiApp } from "../../src/app/create-app.js"
+import { createAuditService } from "../../src/control-plane/audit/audit-service.js"
+import { createActiveSessionRegistry } from "../../src/control-plane/session/active-session-registry.js"
 import {
   createAssistantEntry,
   createProcessEntry,
   type DemoContentItem,
-} from "../../src/control-plane/entry-factory.js"
-import { createEventPublisher } from "../../src/control-plane/event-publisher.js"
-import { createManagedSessionService } from "../../src/control-plane/managed-session-service.js"
-import { createPiFileTranscriptReader } from "../../src/control-plane/pi-file-transcript-reader.js"
-import { createPostgresAuditRepository } from "../../src/control-plane/repositories/postgres-audit-repository.js"
-import { createPostgresSessionRepository } from "../../src/control-plane/repositories/postgres-session-repository.js"
-import { createTriggerService } from "../../src/control-plane/trigger-service.js"
+} from "../../src/control-plane/session/entry-factory.js"
+import { createEventPublisher } from "../../src/control-plane/session/event-publisher.js"
+import { createManagedSessionService } from "../../src/control-plane/session/managed-session-service.js"
+import { createPiFileTranscriptReader } from "../../src/control-plane/session/pi-file-transcript-reader.js"
+import { createPostgresSessionRepository } from "../../src/control-plane/session/repositories/postgres-session-repository.js"
+import { createTriggerService } from "../../src/control-plane/trigger/trigger-service.js"
+import { createPostgresAuditRepository } from "../../src/control-plane/audit/repositories/postgres-audit-repository.js"
+import { createAuthorizationGuard } from "../../src/identity/authorization-guard.js"
+import { createAuthService } from "../../src/identity/auth-service.js"
+import { createCurrentUserResolver } from "../../src/identity/identity-resolver.js"
+import { createPostgresAuthRepository } from "../../src/identity/repositories/postgres-auth-repository.js"
+import { createSessionCookieManager } from "../../src/identity/session-cookie-manager.js"
 import { createTestManagedAgentDatabase } from "./create-test-database.js"
 import { writeManagedTranscriptFixture } from "./managed-transcript-fixture.js"
 
@@ -209,6 +210,13 @@ export const createTestControlPlane = async ({
     eventPublisher,
     workerGateway,
   })
+  const authorizationGuard = createAuthorizationGuard({
+    currentUserResolver,
+    sessionCookieManager,
+    managedSessionService: {
+      getSession: managedSessionService.getSession,
+    },
+  })
 
   return {
     db,
@@ -224,7 +232,7 @@ export const createTestControlPlane = async ({
         managedSessionService,
         triggerService: createTriggerService(),
         authService,
-        currentUserResolver,
+        authorizationGuard,
         sessionCookieManager,
       })
     },

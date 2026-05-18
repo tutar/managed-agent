@@ -1,7 +1,8 @@
 import { and, eq } from "drizzle-orm";
 
-import type { ManagedAgentDatabase } from "../control-plane/repositories/postgres-database.js";
-import { loginSessionsTable, usersTable } from "../control-plane/repositories/postgres-schema.js";
+import type { ManagedAgentDatabase } from "../../infrastructure/persistence/postgres/database.js";
+import { loginSessionsTable, usersTable } from "../../infrastructure/persistence/postgres/schema.js";
+import type { AuthRepository, AuthSessionRecord, UserRecord } from "./auth-repository.js";
 
 /**
  * Durable auth records stored alongside the rest of the managed metadata.
@@ -9,45 +10,6 @@ import { loginSessionsTable, usersTable } from "../control-plane/repositories/po
  * Auth stays inside managed-agent-api, but it uses its own tables so login
  * session lifecycle never gets conflated with agent session lifecycle.
  */
-export type UserRecord = {
-	userId: string;
-	username: string;
-	passwordHash: string;
-	status: "active";
-	createdAt: string;
-	lastLoginAt: string | null;
-};
-
-export type LoginSessionRecord = {
-	loginSessionId: string;
-	userId: string;
-	status: "active" | "revoked";
-	createdAt: string;
-	expiresAt: string;
-	lastSeenAt: string;
-};
-
-export type AuthSessionRecord = {
-	loginSessionId: string;
-	userId: string;
-	username: string;
-	status: "active" | "revoked";
-	createdAt: string;
-	expiresAt: string;
-	lastSeenAt: string;
-};
-
-export interface AuthRepository {
-	createUser(user: UserRecord): Promise<void>;
-	getUserByUsername(username: string): Promise<UserRecord | null>;
-	getUserById(userId: string): Promise<UserRecord | null>;
-	updateUserLastLogin(input: { userId: string; lastLoginAt: string }): Promise<void>;
-	createLoginSession(session: LoginSessionRecord): Promise<void>;
-	getLoginSession(loginSessionId: string): Promise<AuthSessionRecord | null>;
-	touchLoginSession(input: { loginSessionId: string; lastSeenAt: string }): Promise<void>;
-	revokeLoginSession(loginSessionId: string): Promise<void>;
-}
-
 /**
  * PostgreSQL-backed auth repository.
  *

@@ -12,7 +12,7 @@ import {
   initializeManagedAgentDatabase,
   managedAgentDatabaseSchema,
   type ManagedAgentDatabase,
-} from "../../src/control-plane/repositories/postgres-database.js"
+} from "../../src/infrastructure/persistence/postgres/database.js"
 
 /**
  * Create an isolated PostgreSQL-compatible test database without Docker.

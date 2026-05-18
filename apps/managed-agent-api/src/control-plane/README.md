@@ -1,9 +1,16 @@
 # control-plane
 
-预留给 `Managed Agent API` 内部的 Control Plane Layer：
+`Managed Agent API` 内部的 orchestration 层。
 
-- `ManagedSessionService`
-- `TriggerService`
-- `ActiveSessionRegistry`
-- `EventPublisher`
-- `AuditService`
+当前按对象归属拆成：
+
+- `session/`
+  - `ManagedSessionService`
+  - `ActiveSessionRegistry`
+  - `EventPublisher`
+  - transcript read model
+- `audit/`
+  - `AuditService`
+  - audit persistence boundary
+- `trigger/`
+  - `TriggerService`

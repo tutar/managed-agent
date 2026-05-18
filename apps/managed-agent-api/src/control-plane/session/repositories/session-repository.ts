@@ -5,9 +5,9 @@ export type SessionStatus = "idle" | "running" | "error";
 /**
  * Session repository contracts for the control plane.
  *
- * The repository interface isolates durable-session concerns from the service
- * layer so the current in-memory store can later be replaced by a database or
- * other persistent backend without changing orchestration logic.
+ * The repository interface isolates durable-session concerns from the
+ * orchestration layer so metadata and transcript read paths can evolve without
+ * changing control-plane behavior.
  */
 export type SessionRecord = {
 	sessionId: string;

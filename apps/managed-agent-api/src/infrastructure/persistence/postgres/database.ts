@@ -2,13 +2,7 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PgliteDatabase } from "drizzle-orm/pglite";
 import { Pool } from "pg";
 
-import {
-	auditRecordsTable,
-	loginSessionsTable,
-	sessionsTable,
-	userSessionsTable,
-	usersTable,
-} from "./postgres-schema.js";
+import { auditRecordsTable, loginSessionsTable, sessionsTable, userSessionsTable, usersTable } from "./schema.js";
 
 export const managedAgentDatabaseSchema = {
 	sessionsTable,

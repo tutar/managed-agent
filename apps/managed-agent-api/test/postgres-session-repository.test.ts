@@ -8,10 +8,10 @@ import {
   createAssistantEntry,
   createProcessEntry,
   createUserEntry,
-} from "../src/control-plane/entry-factory.js"
-import { createPiFileTranscriptReader } from "../src/control-plane/pi-file-transcript-reader.js"
-import { createPostgresSessionRepository } from "../src/control-plane/repositories/postgres-session-repository.js"
-import type { SessionRecord } from "../src/control-plane/repositories/session-repository.js"
+} from "../src/control-plane/session/entry-factory.js"
+import { createPiFileTranscriptReader } from "../src/control-plane/session/pi-file-transcript-reader.js"
+import { createPostgresSessionRepository } from "../src/control-plane/session/repositories/postgres-session-repository.js"
+import type { SessionRecord } from "../src/control-plane/session/repositories/session-repository.js"
 import { createTestManagedAgentDatabase } from "./test-support/create-test-database.js"
 import { writeManagedTranscriptFixture } from "./test-support/managed-transcript-fixture.js"
 import { mkdtempSync } from "node:fs"

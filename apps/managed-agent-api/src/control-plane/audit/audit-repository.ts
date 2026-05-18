@@ -1,5 +1,5 @@
+import type { ManagedAgentDatabase } from "../../infrastructure/persistence/postgres/database.js";
 import { createPostgresAuditRepository } from "./repositories/postgres-audit-repository.js";
-import type { ManagedAgentDatabase } from "./repositories/postgres-database.js";
 
 /**
  * Build the audit repository used by the local API composition root.

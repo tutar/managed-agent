@@ -9,7 +9,7 @@ import {
   parseCreateSessionRequestDto,
   toCancelSessionResponseDto,
   toErrorResponseDto,
-} from "../src/dto/session-dto.js"
+} from "../src/channel/web-api/dto/session-dto.js"
 
 test("parseCreateSessionRequestDto accepts the minimal supported input", () => {
   const dto = parseCreateSessionRequestDto({

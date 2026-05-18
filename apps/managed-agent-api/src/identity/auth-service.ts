@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 
-import { ConflictError, UnauthorizedError } from "../api-channel/http-errors.js";
+import { ConflictError, UnauthorizedError } from "../channel/web-api/errors/http-errors.js";
 import { hashPassword, verifyPassword } from "./password-hasher.js";
-import type { AuthRepository, AuthSessionRecord, UserRecord } from "./postgres-auth-repository.js";
+import type { AuthRepository, AuthSessionRecord, UserRecord } from "./repositories/auth-repository.js";
 
 const LOGIN_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 

@@ -1,4 +1,4 @@
-import type { DemoInput, UserEntry } from "../../../managed-agent-api/src/control-plane/entry-factory.js";
+import type { DemoInput, UserEntry } from "../../../managed-agent-api/src/control-plane/session/entry-factory.js";
 
 /**
  * Worker job contracts shared between the API service and harness worker.

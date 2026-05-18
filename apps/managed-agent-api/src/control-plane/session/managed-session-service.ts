@@ -4,13 +4,13 @@ import type {
 	SessionRunCompletion,
 	SessionRunEvent,
 	SessionRunJob,
-} from "../../../harness-worker/src/jobs/session-run-job.js";
+} from "../../../../harness-worker/src/jobs/session-run-job.js";
 import {
 	HarnessWorkerExecutionError,
 	type HarnessWorkerGateway,
-} from "../../../harness-worker/src/session-worker-gateway.js";
-import { ConflictError, NotFoundError } from "../api-channel/http-errors.js";
-import type { CreateMessageRequestDto, CreateSessionRequestDto } from "../dto/session-dto.js";
+} from "../../../../harness-worker/src/session-worker-gateway.js";
+import type { CreateMessageRequestDto, CreateSessionRequestDto } from "../../channel/web-api/dto/session-dto.js";
+import { ConflictError, NotFoundError } from "../../channel/web-api/errors/http-errors.js";
 import {
 	createAssistantEntry,
 	createProcessEntry,

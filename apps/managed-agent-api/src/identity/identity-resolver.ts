@@ -1,4 +1,4 @@
-import { UnauthorizedError } from "../api-channel/http-errors.js";
+import { UnauthorizedError } from "../channel/web-api/errors/http-errors.js";
 import type { AuthenticatedUser } from "./auth-service.js";
 
 /**

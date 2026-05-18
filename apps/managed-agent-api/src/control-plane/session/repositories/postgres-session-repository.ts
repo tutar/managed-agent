@@ -1,9 +1,9 @@
 import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
 
-import { ValidationError } from "../../api-channel/http-errors.js";
+import { ValidationError } from "../../../channel/web-api/errors/http-errors.js";
+import type { ManagedAgentDatabase } from "../../../infrastructure/persistence/postgres/database.js";
+import { sessionsTable, userSessionsTable } from "../../../infrastructure/persistence/postgres/schema.js";
 import type { TranscriptReader } from "../transcript-reader.js";
-import type { ManagedAgentDatabase } from "./postgres-database.js";
-import { sessionsTable, userSessionsTable } from "./postgres-schema.js";
 import type { SessionRecord, SessionRepository, UserSessionsPageRecord } from "./session-repository.js";
 
 const normalizeUserId = (userId: string) => {

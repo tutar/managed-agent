@@ -5,11 +5,11 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import type { SessionExecutor } from "../../harness-worker/src/jobs/session-run-job.js"
-import { createProcessEntry, type DemoContentItem } from "../src/control-plane/entry-factory.js"
+import { createProcessEntry, type DemoContentItem } from "../src/control-plane/session/entry-factory.js"
 import {
   parseCreateMessageRequestDto,
   parseCreateSessionRequestDto,
-} from "../src/dto/session-dto.js"
+} from "../src/channel/web-api/dto/session-dto.js"
 import {
   createResponseStub,
   createTestControlPlane,

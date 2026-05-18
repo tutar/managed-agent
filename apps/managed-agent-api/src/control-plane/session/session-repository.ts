@@ -1,5 +1,5 @@
+import type { ManagedAgentDatabase } from "../../infrastructure/persistence/postgres/database.js";
 import { createPiFileTranscriptReader } from "./pi-file-transcript-reader.js";
-import type { ManagedAgentDatabase } from "./repositories/postgres-database.js";
 import { createPostgresSessionRepository } from "./repositories/postgres-session-repository.js";
 
 /**

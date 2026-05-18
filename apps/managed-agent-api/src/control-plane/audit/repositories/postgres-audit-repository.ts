@@ -1,8 +1,7 @@
 import { asc } from "drizzle-orm";
-
+import type { ManagedAgentDatabase } from "../../../infrastructure/persistence/postgres/database.js";
+import { auditRecordsTable } from "../../../infrastructure/persistence/postgres/schema.js";
 import type { AuditRepository, PersistedAuditRecord } from "./audit-repository.js";
-import type { ManagedAgentDatabase } from "./postgres-database.js";
-import { auditRecordsTable } from "./postgres-schema.js";
 
 const normalizeUserId = (userId: string) => {
 	const trimmedUserId = userId.trim();

@@ -9,7 +9,7 @@ import type {
   DemoContentItem,
   DemoInput,
   SessionEntry,
-} from "../../src/control-plane/entry-factory.js"
+} from "../../src/control-plane/session/entry-factory.js"
 
 type ManagedTranscriptRecord =
   | {

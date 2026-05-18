@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import { closeSse, openSse, writeSseEvent } from "../api-channel/sse.js";
+import { closeSse, openSse, writeSseEvent } from "../../channel/web-api/sse/sse-writer.js";
 
 type DemoEvent = {
 	type: string;

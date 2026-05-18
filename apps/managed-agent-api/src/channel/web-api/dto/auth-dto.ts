@@ -1,5 +1,12 @@
-import { type Static, Type } from "@sinclair/typebox";
-import { ValidationError } from "../api-channel/http-errors.js";
+import type { Static } from "@sinclair/typebox";
+
+import { ValidationError } from "../errors/http-errors.js";
+import type {
+	CurrentUserResponseSchema,
+	LoginRequestSchemaDto,
+	LogoutResponseSchema,
+	RegisterRequestSchemaDto,
+} from "../schemas/auth-schema.js";
 
 /**
  * Transport DTOs and route schemas for authentication endpoints.
@@ -8,32 +15,9 @@ import { ValidationError } from "../api-channel/http-errors.js";
  * so auth can evolve without leaking agent-runtime concerns into this layer.
  */
 const USERNAME_MIN_LENGTH = 3;
-const PASSWORD_MIN_LENGTH = 7;
 
-export const RegisterRequestSchema = Type.Object({
-	username: Type.String({ minLength: USERNAME_MIN_LENGTH }),
-	password: Type.String({ minLength: PASSWORD_MIN_LENGTH }),
-});
-
-export const LoginRequestSchema = Type.Object({
-	username: Type.String({ minLength: USERNAME_MIN_LENGTH }),
-	password: Type.String({ minLength: PASSWORD_MIN_LENGTH }),
-});
-
-export const CurrentUserResponseSchema = Type.Object({
-	userId: Type.String(),
-	username: Type.String(),
-	status: Type.String(),
-	createdAt: Type.String(),
-	lastLoginAt: Type.Union([Type.String(), Type.Null()]),
-});
-
-export const LogoutResponseSchema = Type.Object({
-	loggedOut: Type.Literal(true),
-});
-
-export type RegisterRequestDto = Static<typeof RegisterRequestSchema>;
-export type LoginRequestDto = Static<typeof LoginRequestSchema>;
+export type RegisterRequestDto = RegisterRequestSchemaDto;
+export type LoginRequestDto = LoginRequestSchemaDto;
 export type CurrentUserResponseDto = Static<typeof CurrentUserResponseSchema>;
 export type LogoutResponseDto = Static<typeof LogoutResponseSchema>;
 
