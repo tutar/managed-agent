@@ -11,10 +11,12 @@ import { join } from "node:path"
 import type { SessionExecutor } from "../../../harness-worker/src/jobs/session-run-job.js"
 import { createMockSessionExecutor } from "../../../harness-worker/src/runtime/mock-session-executor.js"
 import { createMockTranscriptStore } from "../../../harness-worker/src/runtime/mock-transcript-store.js"
-import { createLocalHarnessWorkerGateway } from "../../../harness-worker/src/session-worker-gateway.js"
 import { createApiApp } from "../../src/app/create-app.js"
 import { createAuditService } from "../../src/control-plane/audit/audit-service.js"
 import { createActiveSessionRegistry } from "../../src/control-plane/session/active-session-registry.js"
+import {
+  createRemoteHarnessWorkerGateway,
+} from "../../src/control-plane/session/harness-worker-client.js"
 import {
   createAssistantEntry,
   createProcessEntry,
@@ -32,6 +34,7 @@ import { createCurrentUserResolver } from "../../src/identity/identity-resolver.
 import { createPostgresAuthRepository } from "../../src/identity/repositories/postgres-auth-repository.js"
 import { createSessionCookieManager } from "../../src/identity/session-cookie-manager.js"
 import { createTestManagedAgentDatabase } from "./create-test-database.js"
+import { createTestWorkerFetch } from "./create-test-worker-fetch.js"
 import { writeManagedTranscriptFixture } from "./managed-transcript-fixture.js"
 
 export const createResponseStub = () => {
@@ -193,15 +196,19 @@ export const createTestControlPlane = async ({
   const currentUserResolver = createCurrentUserResolver({
     authService,
   })
-  const workerGateway = createLocalHarnessWorkerGateway({
-    executor:
-      executor ??
-      executorFactory?.({ transcriptsRoot }) ??
-      createMockSessionExecutor({
-        transcriptStore: createMockTranscriptStore({
-          transcriptsRoot,
-        }),
+  const workerExecutor =
+    executor ??
+    executorFactory?.({ transcriptsRoot }) ??
+    createMockSessionExecutor({
+      transcriptStore: createMockTranscriptStore({
+        transcriptsRoot,
       }),
+    })
+  const workerGateway = createRemoteHarnessWorkerGateway({
+    baseUrl: "http://worker.internal",
+    fetchImpl: createTestWorkerFetch({
+      executor: workerExecutor,
+    }),
   })
   const managedSessionService = createManagedSessionService({
     sessionRepository,

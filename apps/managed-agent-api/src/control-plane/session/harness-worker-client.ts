@@ -1,5 +1,14 @@
-import type { SessionExecutor, SessionRunCompletion, SessionRunEvent, SessionRunJob } from "./jobs/session-run-job.js";
-import { createSessionExecutor } from "./runtime/create-session-executor.js";
+import type { SessionRunCompletion, SessionRunEvent, SessionRunJob } from "@managed-agent/contracts";
+
+/**
+ * HTTP worker client contract used by the managed session control plane.
+ *
+ * managed-agent-api only talks to harness-worker over the worker HTTP
+ * surface. It must not import worker-internal runtime modules directly.
+ */
+export interface HarnessWorkerGateway {
+	execute(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion>;
+}
 
 export class HarnessWorkerExecutionError extends Error {
 	readonly code: string;
@@ -9,18 +18,6 @@ export class HarnessWorkerExecutionError extends Error {
 		this.name = "HarnessWorkerExecutionError";
 		this.code = options?.code ?? "worker_execution_failed";
 	}
-}
-
-/**
- * Worker gateway contracts exposed to the API-side control plane.
- *
- * The local framework still runs API and worker code in one process, but this
- * gateway keeps the boundary explicit so the call path can later move behind a
- * queue, RPC transport, or separate worker deployment without reshaping the
- * control-plane orchestration contract.
- */
-export interface HarnessWorkerGateway {
-	execute(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion>;
 }
 
 type WorkerCompletionEvent = {
@@ -77,44 +74,7 @@ const parseSseFrames = async (
 };
 
 /**
- * Build the local in-process worker gateway.
- *
- * The gateway delegates to the currently selected runtime executor and keeps
- * the API layer unaware of how mock or pi-backed execution is chosen.
- */
-export const createLocalHarnessWorkerGateway = ({
-	executor = createSessionExecutor(),
-}: {
-	executor?: SessionExecutor;
-} = {}): HarnessWorkerGateway => {
-	return {
-		async *execute(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion> {
-			const iterator = executor.run(job);
-
-			try {
-				while (true) {
-					const next = await iterator.next();
-
-					if (next.done) {
-						return next.value;
-					}
-
-					yield next.value;
-				}
-			} catch (error) {
-				throw new HarnessWorkerExecutionError(error instanceof Error ? error.message : "worker execution failed", {
-					cause: error,
-				});
-			}
-		},
-	};
-};
-
-/**
- * Build a remote HTTP gateway for the standalone Harness Worker service.
- *
- * The API remains responsible for orchestration and durable metadata. The
- * worker only receives a prepared run job and streams execution events back.
+ * Create the HTTP client used by managed-agent-api to call harness-worker.
  */
 export const createRemoteHarnessWorkerGateway = ({
 	baseUrl = process.env.MANAGED_AGENT_WORKER_BASE_URL ?? "http://127.0.0.1:4000",

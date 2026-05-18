@@ -37,6 +37,7 @@
 			"apps/*/src/**/*.tsx",
 			"apps/*/test/**/*.ts",
 			"apps/*/test/**/*.tsx",
+			"packages/*/src/**/*.ts",
 			"apps/web-ui/src/**/*.ts",
 			"apps/web-ui/src/**/*.tsx",
 			"!**/node_modules/**/*",

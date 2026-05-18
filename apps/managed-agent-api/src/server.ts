@@ -1,12 +1,9 @@
-import {
-	createLocalHarnessWorkerGateway,
-	createRemoteHarnessWorkerGateway,
-} from "../../harness-worker/src/session-worker-gateway.js";
 import { createApiApp } from "./app/create-app.js";
 import { createAuditRepository } from "./control-plane/audit/audit-repository.js";
 import { createAuditService } from "./control-plane/audit/audit-service.js";
 import { createActiveSessionRegistry } from "./control-plane/session/active-session-registry.js";
 import { createEventPublisher } from "./control-plane/session/event-publisher.js";
+import { createRemoteHarnessWorkerGateway } from "./control-plane/session/harness-worker-client.js";
 import { createManagedSessionService } from "./control-plane/session/managed-session-service.js";
 import { createSessionRepository } from "./control-plane/session/session-repository.js";
 import { createTriggerService } from "./control-plane/trigger/trigger-service.js";
@@ -26,7 +23,6 @@ import { createManagedAgentDatabase } from "./infrastructure/persistence/postgre
  * persistence and the selectable worker runtime boundary.
  */
 const port = Number(process.env.PORT ?? "4173");
-const workerTransport = process.env.MANAGED_AGENT_WORKER_TRANSPORT ?? "http";
 const databaseUrl = process.env.MANAGED_AGENT_DATABASE_URL;
 
 if (!databaseUrl) {
@@ -48,8 +44,7 @@ const auditRepository = await createAuditRepository({
 const activeSessionRegistry = createActiveSessionRegistry();
 const auditService = createAuditService({ auditRepository });
 const eventPublisher = createEventPublisher();
-const workerGateway =
-	workerTransport === "local" ? createLocalHarnessWorkerGateway() : createRemoteHarnessWorkerGateway();
+const workerGateway = createRemoteHarnessWorkerGateway();
 const authService = createAuthService({
 	authRepository,
 });

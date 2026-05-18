@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { AssistantEntry, DemoContentItem, DemoInput, ProcessEntry, UserEntry } from "@managed-agent/contracts";
 
 /**
  * Transcript entry constructors for the local session model.
@@ -6,27 +7,18 @@ import { randomUUID } from "node:crypto";
  * Keeping entry creation centralized preserves the parent/child structure the
  * API returns and makes later migration to durable transcript storage safer.
  */
-export type TextContentItem = {
-	type: "text";
-	text: string;
-};
-
-export type MediaContentItem = {
-	type: "image" | "video";
-	url: string;
-};
-
-export type ToolCallContentItem = {
-	type: "tool_call";
-	toolCallId: string;
-	toolName: string;
-	status: "started" | "completed" | "error";
-	arguments?: string;
-	result?: string;
-	error?: string;
-};
-
-export type InputContentItem = TextContentItem | MediaContentItem;
+export type {
+	AssistantEntry,
+	DemoContentItem,
+	DemoInput,
+	InputContentItem,
+	MediaContentItem,
+	ProcessEntry,
+	SessionEntry,
+	TextContentItem,
+	ToolCallContentItem,
+	UserEntry,
+} from "@managed-agent/contracts";
 
 /**
  * Transcript content items returned to frontend clients.
@@ -35,36 +27,6 @@ export type InputContentItem = TextContentItem | MediaContentItem;
  * must be able to rehydrate process/tool activity after the original SSE stream
  * has finished.
  */
-export type DemoContentItem = TextContentItem | MediaContentItem | ToolCallContentItem;
-
-export type DemoInput = {
-	content: InputContentItem[];
-};
-
-type BaseEntry = {
-	id: string;
-	parentId: string | null;
-	createdAt: string;
-};
-
-export type UserEntry = {
-	messageType: "user";
-	content: DemoContentItem[];
-	input: DemoInput;
-} & BaseEntry;
-
-export type ProcessEntry = {
-	messageType: "process";
-	content: DemoContentItem[];
-} & BaseEntry & { parentId: string };
-
-export type AssistantEntry = {
-	messageType: "assistant";
-	content: DemoContentItem[];
-} & BaseEntry & { parentId: string };
-
-export type SessionEntry = UserEntry | ProcessEntry | AssistantEntry;
-
 /**
  * Create process-stable unique ids for sessions and transcript nodes.
  *

@@ -1,5 +1,6 @@
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import type { AssistantMessage, TextContent } from "@earendil-works/pi-ai";
 import {
 	type AgentSessionEvent,
 	AuthStorage,
@@ -76,6 +77,56 @@ const toStructuredText = (value: unknown) => {
 	return JSON.stringify(value);
 };
 
+const readAssistantText = (message: AssistantMessage | undefined) => {
+	if (!message) {
+		return "";
+	}
+
+	return message.content
+		.filter((item): item is TextContent => item.type === "text")
+		.map((item) => item.text)
+		.join("");
+};
+
+const readFinalAssistantText = (messages: unknown[]) => {
+	for (let index = messages.length - 1; index >= 0; index -= 1) {
+		const message = messages[index];
+
+		if (
+			typeof message === "object" &&
+			message !== null &&
+			"role" in message &&
+			message.role === "assistant" &&
+			"content" in message &&
+			Array.isArray(message.content)
+		) {
+			return readAssistantText(message as AssistantMessage);
+		}
+	}
+
+	return "";
+};
+
+const readAppendOnlySuffix = (previousText: string, nextText: string) => {
+	if (nextText.length === 0) {
+		return "";
+	}
+
+	if (nextText.startsWith(previousText)) {
+		return nextText.slice(previousText.length);
+	}
+
+	const maxOverlap = Math.min(previousText.length, nextText.length);
+
+	for (let overlap = maxOverlap; overlap > 0; overlap -= 1) {
+		if (previousText.endsWith(nextText.slice(0, overlap))) {
+			return nextText.slice(overlap);
+		}
+	}
+
+	return nextText;
+};
+
 const createDefaultDependencies = (): PiSessionExecutorDependencies => {
 	return {
 		createAuthStorage() {
@@ -144,13 +195,21 @@ export const createPiSessionExecutor = (
 
 			const bufferedEvents: SessionRunEvent[] = [];
 			let nextToolCallIndex = 1;
+			let emittedAssistantText = "";
 			const unsubscribe = session.subscribe((event: AgentSessionEvent) => {
 				if (event.type === "message_update" && event.assistantMessageEvent.type === "text_delta") {
-					const delta = event.assistantMessageEvent.delta;
+					const partialText = readAssistantText(event.assistantMessageEvent.partial);
+					const rawDelta = event.assistantMessageEvent.delta;
+					const delta =
+						partialText.length > 0
+							? readAppendOnlySuffix(emittedAssistantText, partialText)
+							: readAppendOnlySuffix(emittedAssistantText, rawDelta);
 
 					if (!delta || delta.length === 0) {
 						return;
 					}
+
+					emittedAssistantText += delta;
 
 					bufferedEvents.push({
 						type: "final.output.delta",
@@ -173,7 +232,7 @@ export const createPiSessionExecutor = (
 							parentId: job.userEntry.id,
 							toolCallId,
 							name: event.toolName,
-							arguments: "params" in event ? toStructuredText(event.params) : undefined,
+							arguments: "args" in event ? toStructuredText(event.args) : undefined,
 						},
 					});
 				}
@@ -181,15 +240,16 @@ export const createPiSessionExecutor = (
 				if (event.type === "tool_execution_end") {
 					const toolCallId = readToolCallId(event, `tool_call_${nextToolCallIndex++}`);
 					bufferedEvents.push({
-						type: "action.completed",
+						type: event.isError ? "action.failed" : "action.completed",
 						data: {
 							sessionId: job.sessionId,
 							entryId: job.processEntryId,
 							parentId: job.userEntry.id,
 							toolCallId,
 							name: event.toolName,
-							arguments: "params" in event ? toStructuredText(event.params) : undefined,
-							result: "result" in event ? toStructuredText(event.result) : undefined,
+							arguments: "args" in event ? toStructuredText(event.args) : undefined,
+							result: event.isError ? undefined : "result" in event ? toStructuredText(event.result) : undefined,
+							error: event.isError && "result" in event ? toStructuredText(event.result) : undefined,
 						},
 					});
 				}
@@ -212,6 +272,21 @@ export const createPiSessionExecutor = (
 
 				for (const event of bufferedEvents) {
 					yield event;
+				}
+
+				const finalAssistantText = readFinalAssistantText(session.state.messages);
+				const finalSuffix = readAppendOnlySuffix(emittedAssistantText, finalAssistantText);
+
+				if (finalSuffix.length > 0) {
+					yield {
+						type: "final.output.delta",
+						data: {
+							sessionId: job.sessionId,
+							entryId: job.finalEntryId,
+							parentId: job.processEntryId,
+							text: finalSuffix,
+						},
+					};
 				}
 
 				yield {

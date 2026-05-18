@@ -23,6 +23,7 @@
 - Always ask before removing functionality or code that appears to be intentional
 - Do not preserve backward compatibility unless the user explicitly asks for it
 - Never hardcode key checks with, eg. `matchesKey(keyData, "ctrl+x")`. All keybindings must be configurable. Add default to matching object (`DEFAULT_EDITOR_KEYBINDINGS` or `DEFAULT_APP_KEYBINDINGS`)
+- Cross-service rule: app packages must not import another service's internal `src/` modules. Shared payloads and entry/session contracts must live in a shared contracts module, and service-to-service integration must go through those shared contracts plus the explicit transport boundary.
 
 ## Commands
 

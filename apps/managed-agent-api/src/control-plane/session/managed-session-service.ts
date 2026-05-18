@@ -1,14 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 
-import type {
-	SessionRunCompletion,
-	SessionRunEvent,
-	SessionRunJob,
-} from "../../../../harness-worker/src/jobs/session-run-job.js";
-import {
-	HarnessWorkerExecutionError,
-	type HarnessWorkerGateway,
-} from "../../../../harness-worker/src/session-worker-gateway.js";
+import type { SessionRunCompletion, SessionRunEvent, SessionRunJob } from "@managed-agent/contracts";
 import type { CreateMessageRequestDto, CreateSessionRequestDto } from "../../channel/web-api/dto/session-dto.js";
 import { ConflictError, NotFoundError } from "../../channel/web-api/errors/http-errors.js";
 import {
@@ -18,6 +10,7 @@ import {
 	createUserEntry,
 	type DemoContentItem,
 } from "./entry-factory.js";
+import { HarnessWorkerExecutionError, type HarnessWorkerGateway } from "./harness-worker-client.js";
 import type { ListUserSessionsOptions, SessionRecord, SessionRepository } from "./repositories/session-repository.js";
 
 type CreateSessionOptions = {
