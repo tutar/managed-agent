@@ -6,16 +6,18 @@ Managed agent platform built on top of `pi`, with durable session orchestration,
 
 ## Why Managed Agent
 
-**Your AI coding agent, anywhere. No PC required.**
+**Your personal AI agent, anywhere. No PC required.**
 
-Most coding agents today run as desktop apps. They need a powerful machine,
-an always-on connection, and you sitting in front of them. Walk away and
+Most AI agents today run as desktop apps. They need a powerful machine, an
+always-on connection, and you sitting in front of them. Walk away and
 everything stops.
 
 Managed Agent is different. Your agent runs on a server. You connect through
 a browser — from your laptop, your phone, a tablet, anywhere. Start a task
 on your desktop, check progress from your phone during lunch, come back when
-it's done. The agent keeps working whether you're connected or not.
+it's done. The agent keeps working whether you're connected or not. Code
+review, document drafting, research, creative writing, data analysis —
+whatever you need.
 
 - **Any device, anywhere**: browser-based. No installation, no GPU, no desktop required.
 - **Persistent sessions**: disconnect and come back hours later. Everything is saved.
