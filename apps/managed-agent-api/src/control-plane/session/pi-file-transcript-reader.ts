@@ -313,7 +313,16 @@ export const createPiFileTranscriptReader = ({
 				return [];
 			}
 
-			const rawJsonl = await readFile(resolveTranscriptPath(piSessionFile, transcriptsRoot), "utf8");
+			let rawJsonl: string;
+			try {
+				rawJsonl = await readFile(resolveTranscriptPath(piSessionFile, transcriptsRoot), "utf8");
+			} catch (error) {
+				if (hasObjectShape(error) && error.code === "ENOENT") {
+					return [];
+				}
+
+				throw error;
+			}
 			const lines = rawJsonl
 				.split("\n")
 				.map((line) => line.trim())

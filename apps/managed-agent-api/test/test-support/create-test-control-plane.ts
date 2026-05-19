@@ -8,9 +8,8 @@ import type { IncomingMessage, ServerResponse } from "node:http"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import type { SessionExecutor } from "../../../harness-worker/src/jobs/session-run-job.js"
-import { createMockSessionExecutor } from "../../../harness-worker/src/runtime/mock-session-executor.js"
-import { createMockTranscriptStore } from "../../../harness-worker/src/runtime/mock-transcript-store.js"
+import type { SessionExecutor } from "@managed-agent/contracts"
+import { createMockSessionExecutor } from "../../src/harness-worker/mock-executor.js"
 import { createApiApp } from "../../src/app/create-app.js"
 import { createAuditService } from "../../src/control-plane/audit/audit-service.js"
 import { createActiveSessionRegistry } from "../../src/control-plane/session/active-session-registry.js"
@@ -200,9 +199,7 @@ export const createTestControlPlane = async ({
     executor ??
     executorFactory?.({ transcriptsRoot }) ??
     createMockSessionExecutor({
-      transcriptStore: createMockTranscriptStore({
-        transcriptsRoot,
-      }),
+      transcriptsRoot,
     })
   const workerGateway = createRemoteHarnessWorkerGateway({
     baseUrl: "http://worker.internal",

@@ -141,12 +141,18 @@ const consumeRun = async ({
 	processContent: DemoContentItem[];
 	cancelled: boolean;
 }> => {
+	process.stderr.write(`[consumeRun] executing job sessionId=${job.sessionId}\n`);
+	process.stderr.write(`[consumeRun] sessionId=${job.sessionId} piSessionFile=${job.piSessionFile}\n`);
 	const iterator = workerGateway.execute(job);
+	process.stderr.write(`[consumeRun] worker gateway called, entering event loop...\n`);
 	let finalOutputText = "";
 	const processContent: DemoContentItem[] = [];
 
 	while (true) {
+		process.stderr.write(`[consumeRun] waiting for next event (race)...\n`);
+		process.stderr.write(`[consumeRun] entering loop...\n`);
 		const next = await Promise.race([iterator.next(), cancellationState.waitForCancellation()]);
+		process.stderr.write(`[consumeRun] got result: done=${JSON.stringify(next)}\n`);
 
 		if ("cancelled" in next && next.cancelled) {
 			return {
@@ -169,6 +175,12 @@ const consumeRun = async ({
 		}
 
 		const event = iteratorResult.value;
+		if (event.type === "run.failed") {
+			throw new HarnessWorkerExecutionError(event.data.message, {
+				code: event.data.code,
+			});
+		}
+
 		const isProcessEvent = event.type.startsWith("process.") || event.type.startsWith("action.");
 		const isFinalEvent = event.type.startsWith("final.");
 

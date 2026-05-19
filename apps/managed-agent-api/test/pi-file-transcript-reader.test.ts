@@ -132,6 +132,29 @@ test("pi file transcript reader derives relative transcript paths from MANAGED_A
   }
 })
 
+test("pi file transcript reader returns an empty entry list when the host cannot see a relative runtime file", async () => {
+  const mountRoot = mkdtempSync(join(tmpdir(), "managed-agent-missing-runtime-file-"))
+  const previousMountRoot = process.env.MANAGED_AGENT_MOUNT_ROOT
+
+  process.env.MANAGED_AGENT_MOUNT_ROOT = mountRoot
+
+  try {
+    const reader = createPiFileTranscriptReader()
+    const entries = await reader.readSessionEntries({
+      sessionId: "sess_missing",
+      piSessionFile: "sandbox-runtime-sessions/sess_missing.jsonl",
+    })
+
+    assert.deepEqual(entries, [])
+  } finally {
+    if (previousMountRoot === undefined) {
+      delete process.env.MANAGED_AGENT_MOUNT_ROOT
+    } else {
+      process.env.MANAGED_AGENT_MOUNT_ROOT = previousMountRoot
+    }
+  }
+})
+
 test("pi file transcript reader maps managed mock transcript entries into platform session entries", async () => {
   const baseDir = mkdtempSync(join(tmpdir(), "managed-agent-mock-transcript-"))
   const transcriptPath = join(baseDir, "session.jsonl")

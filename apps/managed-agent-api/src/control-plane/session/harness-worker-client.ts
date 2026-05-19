@@ -85,7 +85,9 @@ export const createRemoteHarnessWorkerGateway = ({
 } = {}): HarnessWorkerGateway => {
 	return {
 		async *execute(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion> {
-			const response = await fetchImpl(new URL("/internal/session-runs", baseUrl).toString(), {
+			const url = new URL("/internal/session-runs", baseUrl).toString();
+			process.stderr.write(`[worker-gateway] POST ${url} sessionId=${job.sessionId}\n`);
+			const response = await fetchImpl(url, {
 				method: "POST",
 				headers: {
 					"content-type": "application/json",

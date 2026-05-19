@@ -3,6 +3,7 @@ import { and, desc, eq, isNull, lt, or } from "drizzle-orm";
 import { ValidationError } from "../../../channel/web-api/errors/http-errors.js";
 import type { ManagedAgentDatabase } from "../../../infrastructure/persistence/postgres/database.js";
 import { sessionsTable, userSessionsTable } from "../../../infrastructure/persistence/postgres/schema.js";
+import { readSandboxTranscript } from "../sandbox-transcript-reader.js";
 import type { TranscriptReader } from "../transcript-reader.js";
 import type { SessionRecord, SessionRepository, UserSessionsPageRecord } from "./session-repository.js";
 
@@ -108,6 +109,16 @@ export const createPostgresSessionRepository = ({
 				return null;
 			}
 
+			let entries = await transcriptReader.readSessionEntries({
+				sessionId: row.sessionId,
+				piSessionFile: row.piSessionFile ?? undefined,
+			});
+
+			// Fall back to sandbox transcript JSONL when pi transcript is empty.
+			if (entries.length === 0) {
+				entries = await readSandboxTranscript(row.sessionId);
+			}
+
 			return {
 				sessionId: row.sessionId,
 				userId: row.userId,
@@ -119,10 +130,7 @@ export const createPostgresSessionRepository = ({
 				createdAt: row.createdAt,
 				updatedAt: row.updatedAt,
 				archivedAt: row.archivedAt ?? undefined,
-				entries: await transcriptReader.readSessionEntries({
-					sessionId: row.sessionId,
-					piSessionFile: row.piSessionFile ?? undefined,
-				}),
+				entries,
 			};
 		},
 		async updateSession(session) {

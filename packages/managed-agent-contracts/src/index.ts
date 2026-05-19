@@ -120,3 +120,10 @@ export type SessionRunEvent =
 export type SessionRunCompletion = {
 	piSessionFile?: string;
 };
+
+
+export interface SessionExecutor {
+	run(
+		job: SessionRunJob,
+	): AsyncGenerator<SessionRunEvent, SessionRunCompletion>;
+}

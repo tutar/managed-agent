@@ -7,7 +7,7 @@
  */
 import type { SessionRunJob } from "@managed-agent/contracts";
 
-import type { SessionExecutor } from "../../../harness-worker/src/jobs/session-run-job.js";
+import type { SessionExecutor } from "@managed-agent/contracts";
 
 const INTERNAL_RUN_PATH = "/internal/session-runs";
 

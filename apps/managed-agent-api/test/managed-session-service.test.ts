@@ -4,7 +4,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import type { SessionExecutor } from "../../harness-worker/src/jobs/session-run-job.js"
+import type { SessionExecutor } from "@managed-agent/contracts"
 import { createProcessEntry, type DemoContentItem } from "../src/control-plane/session/entry-factory.js"
 import {
   parseCreateMessageRequestDto,
@@ -313,6 +313,52 @@ test("managed session service records worker failures into audit and error statu
     const sessionId = (
       await harness.managedSessionService.listUserSessions("demo-user")
     ).items[0]!.sessionId
+    const session = await harness.managedSessionService.getSession(sessionId)
+
+    assert.equal(session?.status, "error")
+    assert.deepEqual((await harness.auditService.list()).map((item) => item.action), [
+      "session.created",
+      "session.run_failed",
+    ])
+  } finally {
+    await harness.close()
+  }
+})
+
+test("managed session service treats streamed run.failed events as execution failures", async () => {
+  const harness = await createTestControlPlane({
+    executor: {
+      async *run() {
+        yield {
+          type: "run.failed",
+          data: {
+            sessionId: "sess_failed",
+            entryId: "entry_final",
+            parentId: "entry_process",
+            code: "execution_error",
+            message: "sandbox exploded",
+          },
+        }
+
+        return {}
+      },
+    },
+  })
+
+  try {
+    await harness.managedSessionService.createSession({
+      request: parseCreateSessionRequestDto({
+        input: {
+          content: [{ type: "text", text: "触发 sandbox 失败" }],
+        },
+      }),
+      userId: "demo-user",
+      includeProcess: true,
+      includeFinal: true,
+      response: createResponseStub(),
+    })
+
+    const sessionId = (await harness.managedSessionService.listUserSessions("demo-user")).items[0]!.sessionId
     const session = await harness.managedSessionService.getSession(sessionId)
 
     assert.equal(session?.status, "error")

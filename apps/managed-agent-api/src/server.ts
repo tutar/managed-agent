@@ -3,10 +3,11 @@ import { createAuditRepository } from "./control-plane/audit/audit-repository.js
 import { createAuditService } from "./control-plane/audit/audit-service.js";
 import { createActiveSessionRegistry } from "./control-plane/session/active-session-registry.js";
 import { createEventPublisher } from "./control-plane/session/event-publisher.js";
-import { createRemoteHarnessWorkerGateway } from "./control-plane/session/harness-worker-client.js";
+import type { HarnessWorkerGateway } from "./control-plane/session/harness-worker-client.js";
 import { createManagedSessionService } from "./control-plane/session/managed-session-service.js";
 import { createSessionRepository } from "./control-plane/session/session-repository.js";
 import { createTriggerService } from "./control-plane/trigger/trigger-service.js";
+import { createSessionExecutor } from "./harness-worker/runtime-selector.js";
 import { createAuthService } from "./identity/auth-service.js";
 import { createAuthorizationGuard } from "./identity/authorization-guard.js";
 import { createCurrentUserResolver } from "./identity/identity-resolver.js";
@@ -44,7 +45,12 @@ const auditRepository = await createAuditRepository({
 const activeSessionRegistry = createActiveSessionRegistry();
 const auditService = createAuditService({ auditRepository });
 const eventPublisher = createEventPublisher();
-const workerGateway = createRemoteHarnessWorkerGateway();
+const executor = createSessionExecutor();
+const workerGateway: HarnessWorkerGateway = {
+	execute(job) {
+		return executor.run(job);
+	},
+};
 const authService = createAuthService({
 	authRepository,
 });

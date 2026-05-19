@@ -6,7 +6,7 @@
   "workspaces": [
     "apps/*",
     "packages/*"
-  ],
+    ],
   "engines": {
     "node": ">=20.18.0"
   },
@@ -27,11 +27,12 @@
     "db:up": "docker compose -f infra/local/docker-compose.yml up -d postgres",
     "db:down": "docker compose -f infra/local/docker-compose.yml down",
     "db:logs": "docker compose -f infra/local/docker-compose.yml logs postgres",
-    "dev": "PORT=4173 MANAGED_AGENT_WORKER_BASE_URL=${MANAGED_AGENT_WORKER_BASE_URL:-http://127.0.0.1:4000} MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} npm run dev --workspace @managed-agent/managed-agent-api",
-    "dev:all": "MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} concurrently --kill-others-on-fail --names worker,api,web-ui --prefix-colors blue,green,magenta \"npm run start:worker\" \"MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT} npm run start --workspace @managed-agent/managed-agent-api\" \"npm run start:web-ui\"",
-    "dev:all:pi": "MANAGED_AGENT_RUNTIME=pi MANAGED_AGENT_DEFAULT_MODEL=deepseek/deepseek-v4-pro MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} concurrently --kill-others-on-fail --names worker,api,web-ui --prefix-colors blue,green,magenta \"npm run start:worker\" \"MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT} npm run start --workspace @managed-agent/managed-agent-api\" \"npm run start:web-ui\"",
-    "start": "PORT=4173 MANAGED_AGENT_WORKER_BASE_URL=${MANAGED_AGENT_WORKER_BASE_URL:-http://127.0.0.1:4000} MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} npm run start --workspace @managed-agent/managed-agent-api",
-    "start:worker": "HARNESS_WORKER_PORT=4000 MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} npm run start --workspace @managed-agent/harness-worker",
+    "dev": "PORT=4173 MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} npm run dev --workspace @managed-agent/managed-agent-api",
+    "dev:all": "MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} concurrently --kill-others-on-fail --names api,web-ui --prefix-colors green,magenta \"MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT} npm run start --workspace @managed-agent/managed-agent-api\" \"npm run start:web-ui\"",
+    "dev:all:pi": "MANAGED_AGENT_RUNTIME=pi MANAGED_AGENT_DEFAULT_MODEL=deepseek/deepseek-v4-pro MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} concurrently --kill-others-on-fail --names api,web-ui --prefix-colors green,magenta \"MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT} npm run start --workspace @managed-agent/managed-agent-api\" \"npm run start:web-ui\"",
+    "dev:all:sandbox": "MANAGED_AGENT_RUNTIME=sandbox MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} concurrently --kill-others-on-fail --names api,web-ui --prefix-colors green,magenta \"MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT} npm run start --workspace @managed-agent/managed-agent-api\" \"npm run start:web-ui\"",
+    "start": "PORT=4173 MANAGED_AGENT_MOUNT_ROOT=${MANAGED_AGENT_MOUNT_ROOT:-$(pwd)/.managed-agent/mnt} npm run start --workspace @managed-agent/managed-agent-api",
+    "start:worker": "npm run start --workspace @managed-agent/harness",
     "start:web-ui": "npm run start --workspace @managed-agent/web-ui",
     "demo": "npm run start",
     "demo:api": "npm run start --workspace @managed-agent/managed-agent-api",
@@ -40,8 +41,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "check": "npm run lint && npm run typecheck",
     "check:api": "npm run check --workspace @managed-agent/managed-agent-api",
-    "check:worker": "npm run check --workspace @managed-agent/harness-worker",
+    "check:worker": "npm run check --workspace @managed-agent/harness",
     "check:web-ui": "npm run check --workspace @managed-agent/web-ui",
-    "clean": "shx rm -rf node_modules apps/managed-agent-api/node_modules apps/harness-worker/node_modules apps/web-ui/node_modules"
+    "clean": "shx rm -rf node_modules apps/managed-agent-api/node_modules apps/harness/node_modules apps/web-ui/node_modules"
   }
 }

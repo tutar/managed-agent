@@ -18,9 +18,11 @@
     "check": "npm run lint && npm run typecheck"
   },
   "dependencies": {
-    "@managed-agent/contracts": "0.0.0",
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^11.1.0",
+    "@kubernetes/client-node": "^1.4.0",
+    "@managed-agent/contracts": "0.0.0",
+    "@managed-agent/harness": "^0.0.0",
     "@sinclair/typebox": "^0.34.41",
     "drizzle-orm": "^0.45.2",
     "fastify": "^5.6.1",
