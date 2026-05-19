@@ -35,6 +35,15 @@
 - When writing tests, run them, identify issues in either the test or implementation, and iterate until fixed.
 - NEVER commit unless user asks
 
+## Proposal Delivery Process
+
+- When the work item is the implementation of a proposal, do not start coding immediately.
+- First complete the corresponding technical design in `docs/design/`.
+- Then complete or update the corresponding interface design in `docs/interfaces/` and any service-local API contract docs such as `apps/managed-agent-api/docs/openapi.yaml`.
+- Treat proposal -> technical design -> interface design as a required sequence. Wait for review/approval of that sequence before entering implementation.
+- Before development starts, make sure the proposal, design, and interface docs agree on scope, boundaries, and ownership.
+- During implementation, testing, and before committing, update `docs/status/implementation-status.md` so the delivery state matches the actual codebase.
+
 ## PR Workflow
 
 - Analyze PRs without pulling locally first
