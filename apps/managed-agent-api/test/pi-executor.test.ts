@@ -1,14 +1,18 @@
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import test from "node:test";
 
 import { createPiSessionExecutor } from "../src/harness-worker/pi-executor.js";
 
 test("pi executor returns the persisted piSessionFile from the harness result", async () => {
+	let seenSessionDir: string | undefined;
 	const executor = createPiSessionExecutor({
-		async *runHarnessImpl() {
+		transcriptsRoot: "/mnt/transcripts",
+		async *runHarnessImpl(input) {
+			seenSessionDir = input.sessionDir;
 			yield { type: "agent_start" };
 			yield { type: "agent_end" };
-			return { piSessionFile: "pi-sessions/persisted.jsonl" };
+			return { piSessionFile: join("/mnt/transcripts", "pi-sessions", "persisted.jsonl") };
 		},
 	});
 
@@ -43,6 +47,7 @@ test("pi executor returns the persisted piSessionFile from the harness result", 
 	assert.deepEqual(second.value, {
 		piSessionFile: "pi-sessions/persisted.jsonl",
 	});
+	assert.equal(seenSessionDir, "/mnt/transcripts/pi-sessions");
 });
 
 test("pi executor maps failed tool completions to action.failed events", async () => {
