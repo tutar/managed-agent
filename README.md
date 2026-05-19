@@ -1,6 +1,6 @@
 # managed-agent
 
-Managed agent platform built on top of `pi`, with durable session orchestration, shared transcript storage, and a separated API/control-plane/worker runtime.
+Managed agent platform built on top of `pi`, with durable session orchestration, shared transcript storage, and a separated API/control-plane/runtime.
 
 [中文说明 / Chinese README](./README.zh-CN.md)
 
@@ -9,15 +9,15 @@ Managed agent platform built on top of `pi`, with durable session orchestration,
 The main value of this project is `managed`, not "another local agent demo":
 
 - durable session / transcript: session metadata, recent-session projections, audit records, and transcripts all have explicit durable truth
-- separated control plane: `managed-agent-api` and `harness-worker` are split so scheduling, recovery, and runtime execution can evolve independently
+- separated control plane: `managed-agent-api` schedules execution, `apps/harness` provides the agent runtime
 - shared mount contract: runtime storage is organized around `/mnt/*` semantics for transcripts, uploads, outputs, tool results, skills, and extensions
-- hosted runtime direction: the long-term expansion path is sandboxing, storage, audit, identity, and multi-tenant controls instead of pushing everything back into a local agent loop
+- hosted runtime direction: the long-term expansion path is sandboxing, storage, audit, identity, and multi-tenant controls
 
 ## Architecture At A Glance
 
 - `apps/web-ui`: standalone web client that consumes the public HTTP/SSE API
-- `apps/managed-agent-api`: `Managed Agent API`, owning the API/channel layer and control-plane layer
-- `apps/harness-worker`: `Harness Worker`, owning `pi` runtime execution, tools, skills, extensions, and later sandbox integration
+- `apps/managed-agent-api`: `Managed Agent API`, owning the API/channel layer, control-plane layer, and `harness-worker/` scheduler module
+- `apps/harness`: pure agent runtime package (pi executor, container entrypoint, CLI adapter). Can run in-process, in a K8s Pod, or as a standalone CLI
 - `infra/`: ingress, Kubernetes, Firecracker, rclone, storage conventions, and local infrastructure support
 - `docs/`: proposals, architecture/design docs, API/storage docs, and implementation status
 
@@ -26,40 +26,56 @@ Full document index: [docs/README.md](./docs/README.md)
 
 ## Quick Start
 
-Local requirements:
+### Prerequisites
 
 - PostgreSQL via local `docker compose`
 - mount root at repository-local `.managed-agent/mnt`
-- optional real LLM integration; current baseline is `DeepSeek via pi`
+- Node.js >= 20.18
 
-Start local PostgreSQL:
+### pi mode (in-process, no K8s)
 
 ```bash
 npm run db:up
-```
-
-Start the three-process local stack:
-
-```bash
 export DEEPSEEK_API_KEY=your-deepseek-api-key
 export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
 export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
 npm run dev:all:pi
 ```
 
-Fixed local ports:
+### sandbox mode (K8s Pod isolation)
+
+Requires Docker and a local K8s cluster. One-time setup:
+
+```bash
+# Build harness image, create kind cluster, load image
+./scripts/sandbox-setup.sh
+```
+
+Then start:
+
+```bash
+npm run db:up
+export DEEPSEEK_API_KEY=your-deepseek-api-key
+export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
+export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+npm run dev:all:sandbox
+```
+
+### mock mode (no external dependencies)
+
+```bash
+npm run db:up
+export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
+export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+npm run dev:all
+```
+
+## Ports
 
 - `web-ui`: `3000`
-- `harness-worker`: `4000`
 - `managed-agent-api`: `4173`
 
-Fixed local state root:
-
-- use repository-root `.managed-agent/mnt`
-- do not use `apps/managed-agent-api/.managed-agent`
-- do not use `apps/harness-worker/.managed-agent`
-
-Default local database parameters:
+## Default local database
 
 - host: `127.0.0.1`
 - port: `5432`
@@ -73,30 +89,27 @@ Reset transcripts, local metadata, and PostgreSQL session-related state:
 npm run reset:local-state
 ```
 
-Example request:
-
-```bash
-curl -N -X POST 'http://127.0.0.1:4173/sessions?userId=demo-user' \
-  -H 'Content-Type: application/json' \
-  --data '{"model":"deepseek/deepseek-v4-pro","thinkingLevel":"medium","input":{"content":[{"type":"text","text":"Analyze the current project structure"}]}}'
-```
-
 ## Current Scope
 
 Currently covered:
 
-- `web-ui -> managed-agent-api -> harness-worker` minimal browser flow
-- `managed-agent-api -> harness-worker` service-to-service runtime flow
+- `web-ui -> managed-agent-api` minimal browser flow (no standalone worker)
+- `mock / pi / sandbox` three runtime modes, selectable via `MANAGED_AGENT_RUNTIME`
+- `apps/harness` independent agent runtime package
+- Sandbox Pod scheduling: K8s API Pod lifecycle, log polling, event streaming
+- Sandbox Pod runs pi agent with real DeepSeek calls
 - PostgreSQL durable metadata / projection / audit
-- `piSessionFile` and managed transcript JSONL read path
+- Transcript persistence: sandbox JSONL disk cache + refresh recovery
 - rename, archive, cursor pagination, and explicit SSE lifecycle
+- User registration, login, logout, session auth
 
 Not covered yet:
 
-- Firecracker and real `cwd` lifecycle
+- Kata / Firecracker and real `cwd` lifecycle (local validation uses containerd runc)
 - remote object-storage sync and automated `/mnt/*` durable mounts
 - full trigger scheduling and external-event recovery
-- auth, multi-tenant controls, budgets, and policy enforcement
+- multi-tenant controls, budgets, and policy enforcement
+- NetworkPolicy + HTTP Proxy sandbox security
 
 ## Read Next
 

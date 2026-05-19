@@ -6,18 +6,18 @@
 
 ## 为什么亮点是 Managed
 
-这个项目当前最重要的特征是 `managed`，而不是“又一个 agent demo”：
+这个项目当前最重要的特征是 `managed`，而不是"又一个 agent demo"：
 
 - durable session / transcript：会话 metadata、recent-session projection、audit 和 transcript 都有明确 durable truth
-- separated control plane：`managed-agent-api` 与 `harness-worker` 分层，后续可以继续扩展为更强的调度和恢复模型
+- separated control plane：`managed-agent-api` 负责调度，`apps/harness` 提供 agent 运行时
 - shared mount contract：运行时统一围绕 `/mnt/*` 语义组织 transcript、uploads、outputs、tool results、skills、extensions
-- hosted runtime direction：后续扩展方向是 sandbox、storage、audit、identity、multi-tenant，而不是把能力塞回本地 agent loop
+- hosted runtime direction：后续扩展方向是 sandbox、storage、audit、identity、multi-tenant
 
 ## 架构概览
 
 - `apps/web-ui`: 独立 Web 客户端，按真实用户视角消费 HTTP/SSE API
-- `apps/managed-agent-api`: `Managed Agent API`，承载 API/channel layer 和 control-plane layer
-- `apps/harness-worker`: `Harness Worker`，运行 `pi` runtime、tools、skills、extensions 和后续 sandbox 执行面
+- `apps/managed-agent-api`: `Managed Agent API`，承载 API/channel layer、control-plane layer 和 `harness-worker/` 调度模块
+- `apps/harness`: 纯 agent 运行时包（pi executor、容器入口、CLI），可 in-process 调用、K8s Pod 内运行、或独立 CLI 部署
 - `infra/`: ingress、Kubernetes、Firecracker、rclone、存储约定和本地开发基础设施
 - `docs/`: proposal、架构、接口、存储设计和当前实现状态
 
@@ -25,40 +25,56 @@
 
 ## 快速开始
 
-本地依赖：
+### 前置条件
 
 - PostgreSQL: `docker compose` 本地启动
 - mount root: 仓库根 `.managed-agent/mnt`
-- 真实 LLM: 可选，当前默认联调基线是 `DeepSeek via pi`
+- Node.js >= 20.18
 
-启动本地 PostgreSQL：
+### pi 模式（进程内，无需 K8s）
 
 ```bash
 npm run db:up
-```
-
-一键启动三进程：
-
-```bash
 export DEEPSEEK_API_KEY=your-deepseek-api-key
 export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
 export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
 npm run dev:all:pi
 ```
 
-固定本地端口：
+### sandbox 模式（K8s Pod 隔离）
+
+需要 Docker 和本地 K8s 集群。一次性环境准备：
+
+```bash
+# 构建 harness 镜像、创建 kind 集群、加载镜像
+./scripts/sandbox-setup.sh
+```
+
+然后启动：
+
+```bash
+npm run db:up
+export DEEPSEEK_API_KEY=your-deepseek-api-key
+export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
+export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+npm run dev:all:sandbox
+```
+
+### mock 模式（无外部依赖）
+
+```bash
+npm run db:up
+export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
+export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+npm run dev:all
+```
+
+## 端口
 
 - `web-ui`: `3000`
-- `harness-worker`: `4000`
 - `managed-agent-api`: `4173`
 
-固定本地数据根：
-
-- 统一使用仓库根 `.managed-agent/mnt`
-- 不再使用 `apps/managed-agent-api/.managed-agent`
-- 不再使用 `apps/harness-worker/.managed-agent`
-
-默认本地数据库参数：
+## 默认本地数据库参数
 
 - host: `127.0.0.1`
 - port: `5432`
@@ -72,30 +88,27 @@ npm run dev:all:pi
 npm run reset:local-state
 ```
 
-示例请求：
-
-```bash
-curl -N -X POST 'http://127.0.0.1:4173/sessions?userId=demo-user' \
-  -H 'Content-Type: application/json' \
-  --data '{"model":"deepseek/deepseek-v4-pro","thinkingLevel":"medium","input":{"content":[{"type":"text","text":"分析当前项目结构"}]}}'
-```
-
 ## 当前范围
 
 当前已经覆盖：
 
-- `web-ui -> managed-agent-api -> harness-worker` 最小浏览器链路
-- `managed-agent-api -> harness-worker` 独立服务调用链
+- `web-ui -> managed-agent-api` 最小浏览器链路（不再需要独立 worker 服务）
+- `mock / pi / sandbox` 三种 runtime，通过 `MANAGED_AGENT_RUNTIME` 切换
+- `apps/harness` 独立 agent 运行时包
+- Sandbox Pod 调度：K8s API Pod 生命周期、日志轮询、事件流回传
+- Sandbox Pod 内 pi agent 运行，调真实 DeepSeek
 - PostgreSQL durable metadata / projection / audit
-- `piSessionFile` 和 managed transcript JSONL 读取链路
+- transcript 持久化：sandbox JSONL 磁盘缓存 + 刷新恢复
 - rename、archive、分页和明确的 SSE 生命周期
+- 用户注册、登录、登出、会话认证
 
 当前还没覆盖：
 
-- Firecracker 和真实 `cwd` 生命周期
+- Kata / Firecracker 和真实 `cwd` 生命周期（本地 kind 验证用容器代替 VM）
 - 远端对象存储同步器和 `/mnt/*` 挂载自动化
 - 完整 trigger 调度和外部事件恢复
-- 注册登录、多租户、预算与策略控制
+- 多租户、预算与策略控制
+- NetworkPolicy + HTTP Proxy sandbox 安全策略
 
 ## 继续阅读
 
