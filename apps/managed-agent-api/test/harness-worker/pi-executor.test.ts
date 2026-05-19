@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { join } from "node:path";
 import test from "node:test";
 
-import { createPiSessionExecutor } from "../src/harness-worker/pi-executor.js";
+import { createPiSessionExecutor } from "../../src/harness-worker/pi-executor.js";
 
 test("pi executor returns the persisted piSessionFile from the harness result", async () => {
 	let seenSessionDir: string | undefined;

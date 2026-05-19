@@ -120,7 +120,18 @@ src/
 
 ## Tests
 
-- API transport tests 使用 Fastify inject
+- `test/channel/web-api/`
+  - Fastify inject transport tests，覆盖 auth、cookie、validation、SSE 和 HTTP contract
+- `test/identity/`
+  - account/login session、current-user resolve、cookie policy、ownership guard
+- `test/control-plane/`
+  - session orchestration、transcript readers、durable repositories
+- `test/harness-worker/`
+  - API 侧 worker client、runtime selector、scheduler、executor adapters
+- `test/test-support/`
+  - 共享 PGlite、worker fetch、transcript fixture helpers
+- `npm run test:unit`
+  - 递归执行整个 `test/` 目录下的 `.test.ts` 文件
 - repository / service tests 使用 `PGlite`
 - 当前不再保留 file/in-memory repository 作为运行时 fallback
 

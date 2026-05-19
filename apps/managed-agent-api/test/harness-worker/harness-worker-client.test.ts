@@ -7,7 +7,7 @@ import test from "node:test"
 import {
   createRemoteHarnessWorkerGateway,
   HarnessWorkerExecutionError,
-} from "../src/control-plane/session/harness-worker-client.js"
+} from "../../src/control-plane/session/harness-worker-client.js"
 
 test("remote harness worker gateway replays worker SSE and completion", async () => {
   const gateway = createRemoteHarnessWorkerGateway({

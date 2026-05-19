@@ -7,7 +7,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
 
-import { createPiFileTranscriptReader } from "../src/control-plane/session/pi-file-transcript-reader.js"
+import { createPiFileTranscriptReader } from "../../../src/control-plane/session/pi-file-transcript-reader.js"
 
 test("pi file transcript reader maps pi JSONL messages into platform session entries", async () => {
   const baseDir = mkdtempSync(join(tmpdir(), "managed-agent-transcript-"))

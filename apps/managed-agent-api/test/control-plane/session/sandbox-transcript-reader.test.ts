@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { readSandboxTranscript } from "../src/control-plane/session/sandbox-transcript-reader.js";
+import { readSandboxTranscript } from "../../../src/control-plane/session/sandbox-transcript-reader.js";
 
 test("sandbox transcript reader preserves turn order and merges streamed chunks", async () => {
 	const mountRoot = mkdtempSync(join(tmpdir(), "managed-agent-sandbox-mount-"));

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createSandboxPodSpec } from "../src/harness-worker/scheduler.js";
+import { createSandboxPodSpec } from "../../src/harness-worker/scheduler.js";
 
 test("sandbox pod spec mounts one persistent claim under the stable /mnt contract", () => {
 	const podSpec = createSandboxPodSpec({

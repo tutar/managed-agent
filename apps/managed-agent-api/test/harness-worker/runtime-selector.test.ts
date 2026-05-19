@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { createSessionExecutor } from "../src/harness-worker/runtime-selector.js";
+import { createSessionExecutor } from "../../src/harness-worker/runtime-selector.js";
 
 test("runtime selector uses a transcript-backed mock executor by default", async () => {
 	const previousRuntime = process.env.MANAGED_AGENT_RUNTIME;

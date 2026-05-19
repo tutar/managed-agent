@@ -14,7 +14,7 @@
     "lint": "biome check src",
     "format": "biome format --write src",
     "typecheck": "tsc -p tsconfig.json",
-    "test:unit": "node --import tsx --test test/*.test.ts",
+    "test:unit": "find test -name '*.test.ts' -print0 | xargs -0 node --import tsx --test",
     "check": "npm run lint && npm run typecheck"
   },
   "dependencies": {

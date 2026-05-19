@@ -4,8 +4,8 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { createPostgresAuditRepository } from "../src/control-plane/audit/repositories/postgres-audit-repository.js"
-import { createTestManagedAgentDatabase } from "./test-support/create-test-database.js"
+import { createPostgresAuditRepository } from "../../../src/control-plane/audit/repositories/postgres-audit-repository.js"
+import { createTestManagedAgentDatabase } from "../../test-support/create-test-database.js"
 
 test("postgres audit repository persists and lists audit records", async () => {
   const database = await createTestManagedAgentDatabase()

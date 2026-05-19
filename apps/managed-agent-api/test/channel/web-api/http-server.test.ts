@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { FastifyInstance, LightMyRequestResponse } from "fastify";
-import { createTranscriptBackedExecutor, createTestControlPlane } from "./test-support/create-test-control-plane.js";
+import { createTranscriptBackedExecutor, createTestControlPlane } from "../../test-support/create-test-control-plane.js";
 
 const TEST_ORIGIN = "http://127.0.0.1:3000";
 

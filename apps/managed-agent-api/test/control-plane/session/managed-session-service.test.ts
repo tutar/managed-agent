@@ -5,17 +5,17 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import type { SessionExecutor } from "@managed-agent/contracts"
-import { createProcessEntry, type DemoContentItem } from "../src/control-plane/session/entry-factory.js"
+import { createProcessEntry, type DemoContentItem } from "../../../src/control-plane/session/entry-factory.js"
 import {
   parseCreateMessageRequestDto,
   parseCreateSessionRequestDto,
-} from "../src/channel/web-api/dto/session-dto.js"
+} from "../../../src/channel/web-api/dto/session-dto.js"
 import {
   createResponseStub,
   createTestControlPlane,
   createTranscriptBackedExecutor,
-} from "./test-support/create-test-control-plane.js"
-import { writeManagedTranscriptFixture } from "./test-support/managed-transcript-fixture.js"
+} from "../../test-support/create-test-control-plane.js"
+import { writeManagedTranscriptFixture } from "../../test-support/managed-transcript-fixture.js"
 
 test("managed session service creates a session and updates projections", async () => {
   const harness = await createTestControlPlane()
