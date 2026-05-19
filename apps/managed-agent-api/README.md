@@ -112,6 +112,8 @@ src/
 
 - session metadata / recent-session projection / audit 走 PostgreSQL durable store
 - transcript 通过 `piSessionFile` 从 `${MANAGED_AGENT_MOUNT_ROOT}/transcripts` 读取
+- 运行时 transcript 只能落在 `${MANAGED_AGENT_MOUNT_ROOT}/transcripts`
+  下；服务目录中的 `transcripts/` 仅允许作为历史残留被清理，不应再被新代码写入
 - worker 默认使用 mock runtime
 - 设置 `MANAGED_AGENT_RUNTIME=pi` 时切到 `pi` runtime
 - `web-ui` 通过 cookie auth + JSON/SSE 访问本服务
