@@ -4,14 +4,21 @@
 
 [English README](./README.md)
 
-## 为什么亮点是 Managed
+## 为什么用 Managed Agent
 
-这个项目当前最重要的特征是 `managed`，而不是"又一个 agent demo"：
+**你的 AI 编程助手，随处可用，不需要一台高配电脑。**
 
-- durable session / transcript：会话 metadata、recent-session projection、audit 和 transcript 都有明确 durable truth
-- separated control plane：`managed-agent-api` 负责调度，`apps/harness` 提供 agent 运行时
-- shared mount contract：运行时统一围绕 `/mnt/*` 语义组织 transcript、uploads、outputs、tool results、skills、extensions
-- hosted runtime direction：后续扩展方向是 sandbox、storage、audit、identity、multi-tenant
+现在大多数 coding agent 都是桌面应用。你需要一台性能足够的机器、保持在线、坐在屏幕前。一旦离开，一切就停了。
+
+Managed Agent 不一样。Agent 在服务端运行，你通过浏览器连接——笔记本、手机、平板，随时随地。在电脑上发起一个任务，午饭时用手机看看进度，回来时已经完成。你离线了，agent 还在继续。
+
+- **任何设备都能用**：基于浏览器，不需要安装，不需要 GPU，不需要买 PC。
+- **会话持久化**：断开连接，几小时后再回来，一切都在。
+- **隔离执行**：每个 session 在独立沙箱中运行，安全是前提，不是补丁。
+- **可扩展**：接入你自己的 skills、工具和 MCP 客户端，agent 适应你的工作流。
+- **面向未来设计**：从第一天就考虑多租户、配额、预算和策略控制。
+
+受 Anthropic [Claude managed-agents](https://www.anthropic.com/engineering/managed-agents) 启发构建。
 
 ## 架构概览
 

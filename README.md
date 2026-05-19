@@ -4,14 +4,26 @@ Managed agent platform built on top of `pi`, with durable session orchestration,
 
 [中文说明 / Chinese README](./README.zh-CN.md)
 
-## Why Managed Matters
+## Why Managed Agent
 
-The main value of this project is `managed`, not "another local agent demo":
+**Your AI coding agent, anywhere. No PC required.**
 
-- durable session / transcript: session metadata, recent-session projections, audit records, and transcripts all have explicit durable truth
-- separated control plane: `managed-agent-api` schedules execution, `apps/harness` provides the agent runtime
-- shared mount contract: runtime storage is organized around `/mnt/*` semantics for transcripts, uploads, outputs, tool results, skills, and extensions
-- hosted runtime direction: the long-term expansion path is sandboxing, storage, audit, identity, and multi-tenant controls
+Most coding agents today run as desktop apps. They need a powerful machine,
+an always-on connection, and you sitting in front of them. Walk away and
+everything stops.
+
+Managed Agent is different. Your agent runs on a server. You connect through
+a browser — from your laptop, your phone, a tablet, anywhere. Start a task
+on your desktop, check progress from your phone during lunch, come back when
+it's done. The agent keeps working whether you're connected or not.
+
+- **Any device, anywhere**: browser-based. No installation, no GPU, no desktop required.
+- **Persistent sessions**: disconnect and come back hours later. Everything is saved.
+- **Isolated execution**: each session runs in its own sandbox. Safe by default.
+- **Extensible**: bring your own skills, tools, and MCP clients. The agent adapts to your workflow.
+- **Always improving**: designed for multi-tenant, quotas, budgets, and policy controls from day one.
+
+Inspired by Anthropic's [Claude managed-agents](https://www.anthropic.com/engineering/managed-agents).
 
 ## Architecture At A Glance
 
