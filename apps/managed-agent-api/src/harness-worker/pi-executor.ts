@@ -1,11 +1,15 @@
+import { isAbsolute, join, relative } from "node:path";
 import type { SessionExecutor, SessionRunCompletion, SessionRunEvent, SessionRunJob } from "@managed-agent/contracts";
 import type { HarnessEvent } from "@managed-agent/harness";
 import { runHarness } from "@managed-agent/harness";
+import { resolveManagedAgentMountPaths } from "../infrastructure/storage/mount-paths.js";
 
 export const createPiSessionExecutor = ({
 	runHarnessImpl = runHarness,
+	transcriptsRoot = resolveManagedAgentMountPaths().transcriptsRoot,
 }: {
 	runHarnessImpl?: typeof runHarness;
+	transcriptsRoot?: string;
 } = {}): SessionExecutor => {
 	return {
 		async *run(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion> {
@@ -16,13 +20,16 @@ export const createPiSessionExecutor = ({
 				thinkingLevel: job.thinkingLevel,
 				prompt: userText,
 				piSessionFile: job.piSessionFile,
+				sessionDir: join(transcriptsRoot, "pi-sessions"),
 			});
 
 			let result = iterator.next();
 			while (true) {
 				const next = await result;
 				if (next.done) {
-					return { piSessionFile: next.value?.piSessionFile };
+					return {
+						piSessionFile: normalizePiSessionFile(next.value?.piSessionFile, transcriptsRoot),
+					};
 				}
 				const mappedEvent = mapEvent(next.value, job);
 				if (mappedEvent) {
@@ -32,6 +39,22 @@ export const createPiSessionExecutor = ({
 			}
 		},
 	};
+};
+
+/**
+ * Persist relative pi session paths so the API can reopen them against the
+ * shared transcripts root regardless of the current working directory.
+ */
+const normalizePiSessionFile = (piSessionFile: string | undefined, transcriptsRoot: string) => {
+	if (!piSessionFile || piSessionFile.length === 0) {
+		return undefined;
+	}
+
+	if (isAbsolute(piSessionFile)) {
+		return relative(transcriptsRoot, piSessionFile);
+	}
+
+	return piSessionFile;
 };
 
 const mapEvent = (event: HarnessEvent, job: SessionRunJob): SessionRunEvent | null => {
