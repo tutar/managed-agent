@@ -34,7 +34,6 @@ export const bootstrapManagedAgentDatabaseStatements = [
     thinking_level text not null,
     provider_config_id text,
     provider_type text,
-    capability_tier text,
     pi_session_file text,
     created_at text not null,
     updated_at text not null,
@@ -93,9 +92,6 @@ export const bootstrapManagedAgentDatabaseStatements = [
     provider_options_json text,
     available_models_json text not null,
     default_model_id text not null,
-    fast_model_id text,
-    balanced_model_id text,
-    strong_model_id text,
     default_thinking_level text not null,
     enabled boolean not null default true,
     created_at text not null,
@@ -105,7 +101,6 @@ export const bootstrapManagedAgentDatabaseStatements = [
     on managed_agent_llm_provider_configs (user_id, updated_at)`,
 	`alter table managed_agent_sessions add column if not exists provider_config_id text`,
 	`alter table managed_agent_sessions add column if not exists provider_type text`,
-	`alter table managed_agent_sessions add column if not exists capability_tier text`,
 ];
 
 type BootstrapClient = {

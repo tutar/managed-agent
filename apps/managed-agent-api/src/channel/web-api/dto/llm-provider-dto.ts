@@ -14,9 +14,6 @@ export type UpsertLlmProviderConfigRequestDto = {
 	headers?: Record<string, string>;
 	availableModels?: string[];
 	defaultModelId?: string;
-	fastModelId?: string;
-	balancedModelId?: string;
-	strongModelId?: string;
 	defaultThinkingLevel?: string;
 	enabled?: boolean;
 	apiKey?: string;
@@ -65,9 +62,6 @@ export const toUpsertLlmProviderConfigRequestDto = (
 		headers: "headers" in body ? normalizeHeaders(body.headers) : undefined,
 		availableModels: "availableModels" in body ? normalizeModels(body.availableModels) : undefined,
 		defaultModelId: "defaultModelId" in body ? trimOptionalString(body.defaultModelId) : undefined,
-		fastModelId: "fastModelId" in body ? trimOptionalString(body.fastModelId) : undefined,
-		balancedModelId: "balancedModelId" in body ? trimOptionalString(body.balancedModelId) : undefined,
-		strongModelId: "strongModelId" in body ? trimOptionalString(body.strongModelId) : undefined,
 		defaultThinkingLevel: "defaultThinkingLevel" in body ? trimOptionalString(body.defaultThinkingLevel) : undefined,
 		enabled: "enabled" in body ? body.enabled : undefined,
 		apiKey: "apiKey" in body ? trimOptionalString(body.apiKey) : undefined,

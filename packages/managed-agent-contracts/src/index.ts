@@ -32,8 +32,6 @@ export type DemoInput = {
 	content: InputContentItem[];
 };
 
-export type CapabilityTier = "fast" | "balanced" | "strong";
-
 export type ProviderAuthMode = "api_key" | "oauth" | "none";
 
 export type ProviderApiType =
@@ -54,6 +52,7 @@ export type LlmProviderModelDefinition = {
 	modelId: string;
 	displayName: string;
 	supportsReasoning: boolean;
+	supportedThinkingLevels?: string[];
 };
 
 export type LlmProviderRuntimeConfig = {
@@ -62,7 +61,6 @@ export type LlmProviderRuntimeConfig = {
 	runtimeProviderId: string;
 	displayName: string;
 	modelId: string;
-	capabilityTier?: CapabilityTier;
 	authMode: ProviderAuthMode;
 	apiType?: ProviderApiType;
 	baseUrl?: string;
@@ -105,7 +103,6 @@ export type SessionRunJob = {
 	thinkingLevel: string;
 	providerConfigId?: string;
 	providerType?: string;
-	capabilityTier?: CapabilityTier;
 	input: DemoInput;
 	piSessionFile?: string;
 	llmProvider?: LlmProviderRuntimeConfig;

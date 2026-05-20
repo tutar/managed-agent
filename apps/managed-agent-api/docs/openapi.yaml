@@ -777,9 +777,6 @@ components:
         loggedOut:
           type: boolean
           const: true
-    CapabilityTier:
-      type: string
-      enum: [fast, balanced, strong]
     LlmProviderModel:
       type: object
       required: [modelId, displayName, supportsReasoning]
@@ -790,6 +787,10 @@ components:
           type: string
         supportsReasoning:
           type: boolean
+        supportedThinkingLevels:
+          type: array
+          items:
+            type: string
     OAuthCredential:
       type: object
       required: [access, refresh, expires]
@@ -818,7 +819,6 @@ components:
           supportsCustomHeaders,
           baseUrlRequired,
           defaultModels,
-          defaultCapabilityModelIds,
           defaultThinkingLevel,
           secretFields
         ]
@@ -848,15 +848,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LlmProviderModel"
-        defaultCapabilityModelIds:
-          type: object
-          properties:
-            fast:
-              type: string
-            balanced:
-              type: string
-            strong:
-              type: string
         defaultThinkingLevel:
           type: string
         secretFields:
@@ -903,12 +894,6 @@ components:
             $ref: "#/components/schemas/LlmProviderModel"
         defaultModelId:
           type: string
-        fastModelId:
-          type: string
-        balancedModelId:
-          type: string
-        strongModelId:
-          type: string
         defaultThinkingLevel:
           type: string
         enabled:
@@ -939,15 +924,6 @@ components:
             type: string
             minLength: 1
         defaultModelId:
-          type: string
-          minLength: 1
-        fastModelId:
-          type: string
-          minLength: 1
-        balancedModelId:
-          type: string
-          minLength: 1
-        strongModelId:
           type: string
           minLength: 1
         defaultThinkingLevel:
@@ -983,15 +959,6 @@ components:
             type: string
             minLength: 1
         defaultModelId:
-          type: string
-          minLength: 1
-        fastModelId:
-          type: string
-          minLength: 1
-        balancedModelId:
-          type: string
-          minLength: 1
-        strongModelId:
           type: string
           minLength: 1
         defaultThinkingLevel:
@@ -1127,15 +1094,11 @@ components:
         modelId:
           type: string
           description: Explicit model id configured under the selected provider.
-        capabilityTier:
-          allOf:
-            - $ref: "#/components/schemas/CapabilityTier"
-          description: >
-            Optional capability tier resolved by the selected provider config.
         thinkingLevel:
           type: string
-          description: Requested reasoning level.
-          enum: [off, minimal, low, medium, high, xhigh]
+          description: >
+            Optional thinking level requested for the selected model. Only valid
+            when the selected model exposes `supportedThinkingLevels`.
         input:
           $ref: "#/components/schemas/SessionInput"
     UpdateSessionRequest:
@@ -1196,8 +1159,6 @@ components:
           type: string
         providerType:
           type: string
-        capabilityTier:
-          $ref: "#/components/schemas/CapabilityTier"
         thinkingLevel:
           type: string
         createdAt:

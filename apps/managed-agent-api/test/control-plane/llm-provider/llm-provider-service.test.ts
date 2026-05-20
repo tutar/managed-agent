@@ -10,7 +10,7 @@ import { createTestManagedAgentDatabase } from "../../test-support/create-test-d
 
 process.env.MANAGED_AGENT_SECRETS_KEY = "managed-agent-test-secrets-key";
 
-test("llm provider service persists encrypted secrets and resolves capability tiers", async () => {
+test("llm provider service persists encrypted secrets and resolves model + thinking level", async () => {
 	const { db, client } = await createTestManagedAgentDatabase();
 	const llmProviderRepository = createPostgresLlmProviderRepository({ db });
 	const llmProviderService = createLlmProviderService({
@@ -19,14 +19,12 @@ test("llm provider service persists encrypted secrets and resolves capability ti
 
 	try {
 		const createdProviderConfig = await llmProviderService.createProviderConfig("user_1", {
-			providerType: "deepseek",
-			displayName: "DeepSeek Personal",
-			availableModels: ["deepseek-v4-pro", "deepseek-v3.1"],
-			defaultModelId: "deepseek-v4-pro",
-			fastModelId: "deepseek-v3.1",
-			balancedModelId: "deepseek-v4-pro",
-			strongModelId: "deepseek-v4-pro",
-			apiKey: "secret-deepseek-key",
+			providerType: "openai",
+			displayName: "OpenAI Personal",
+			availableModels: ["gpt-5.4", "gpt-5.5"],
+			defaultModelId: "gpt-5.4",
+			defaultThinkingLevel: "medium",
+			apiKey: "secret-openai-key",
 		});
 
 		const storedProviderConfig = await llmProviderRepository.getProviderConfig(createdProviderConfig.providerConfigId);
@@ -37,13 +35,14 @@ test("llm provider service persists encrypted secrets and resolves capability ti
 		const resolution = await llmProviderService.resolveProviderSelectionForSession({
 			userId: "user_1",
 			providerConfigId: createdProviderConfig.providerConfigId,
-			capabilityTier: "fast",
+			modelId: "gpt-5.5",
+			thinkingLevel: "xhigh",
 		});
 
-		assert.equal(resolution.runtimeConfig.providerType, "deepseek");
-		assert.equal(resolution.runtimeConfig.modelId, "deepseek-v3.1");
-		assert.equal(resolution.runtimeConfig.apiKey, "secret-deepseek-key");
-		assert.equal(resolution.resolvedModelSelection.capabilityTier, "fast");
+		assert.equal(resolution.runtimeConfig.providerType, "openai");
+		assert.equal(resolution.runtimeConfig.modelId, "gpt-5.5");
+		assert.equal(resolution.runtimeConfig.apiKey, "secret-openai-key");
+		assert.equal(resolution.resolvedModelSelection.thinkingLevel, "xhigh");
 	} finally {
 		await client.close();
 	}

@@ -224,13 +224,14 @@ export const createManagedSessionService = ({
 			userId: string;
 			providerConfigId: string;
 			modelId?: string;
-			capabilityTier?: "fast" | "balanced" | "strong";
+			thinkingLevel?: string;
+			validateThinkingLevel?: boolean;
 		}): Promise<{
 			record: LlmProviderConfigRecord;
 			runtimeConfig: SessionRunJob["llmProvider"];
 			resolvedModelSelection: {
 				modelId: string;
-				capabilityTier?: "fast" | "balanced" | "strong";
+				thinkingLevel?: string;
 			};
 		}>;
 	};
@@ -253,7 +254,8 @@ export const createManagedSessionService = ({
 				userId,
 				providerConfigId: request.providerConfigId,
 				modelId: request.modelId,
-				capabilityTier: request.capabilityTier,
+				thinkingLevel: request.thinkingLevel,
+				validateThinkingLevel: request.thinkingLevel !== undefined,
 			});
 
 			const session: SessionRecord = {
@@ -262,10 +264,10 @@ export const createManagedSessionService = ({
 				sessionName,
 				status: "running",
 				model: `${providerSelection.runtimeConfig?.runtimeProviderId}/${providerSelection.resolvedModelSelection.modelId}`,
-				thinkingLevel: request.thinkingLevel ?? providerSelection.record.defaultThinkingLevel,
+				thinkingLevel:
+					providerSelection.resolvedModelSelection.thinkingLevel ?? providerSelection.record.defaultThinkingLevel,
 				providerConfigId: providerSelection.record.providerConfigId,
 				providerType: providerSelection.record.providerType,
-				capabilityTier: providerSelection.resolvedModelSelection.capabilityTier,
 				createdAt: now,
 				updatedAt: now,
 				entries: [userEntry],
@@ -326,7 +328,6 @@ export const createManagedSessionService = ({
 						thinkingLevel: session.thinkingLevel,
 						providerConfigId: session.providerConfigId,
 						providerType: session.providerType,
-						capabilityTier: session.capabilityTier,
 						input: request.input,
 						llmProvider: providerSelection.runtimeConfig,
 						userEntry,
@@ -440,7 +441,8 @@ export const createManagedSessionService = ({
 						userId: session.userId,
 						providerConfigId: session.providerConfigId,
 						modelId: session.model.includes("/") ? session.model.split("/").slice(1).join("/") : session.model,
-						capabilityTier: session.capabilityTier,
+						thinkingLevel: session.thinkingLevel,
+						validateThinkingLevel: false,
 					})
 				: null;
 
@@ -499,7 +501,6 @@ export const createManagedSessionService = ({
 						thinkingLevel: session.thinkingLevel,
 						providerConfigId: session.providerConfigId,
 						providerType: session.providerType,
-						capabilityTier: session.capabilityTier,
 						piSessionFile: session.piSessionFile,
 						input: request.input,
 						llmProvider: providerSelection?.runtimeConfig,

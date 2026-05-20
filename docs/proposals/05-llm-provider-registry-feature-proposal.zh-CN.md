@@ -16,7 +16,7 @@
 这导致两个问题：
 
 1. 配置源重复，页面配置并不驱动真实运行时
-2. 配置能力过弱，无法按用户维度维护多个 provider、多个模型和能力档位
+2. 配置能力过弱，无法按用户维度维护多个 provider、多个模型和真实的推理强度选择
 
 本提案的目标是把 provider 配置统一成一条主路径：
 
@@ -36,7 +36,7 @@
 - 一个用户是否可以维护多个 provider
 - chat 页面之外的其他 LLM 调用点如何复用同一组 provider 配置
 - OAuth 型 provider 如何和当前用户身份绑定
-- 不同能力档位如何映射到不同模型
+- 不同 provider/model 支持的推理强度如何表达
 
 ### 2. 页面配置没有真正接入运行时
 
@@ -78,7 +78,7 @@
 
 - 用户级 provider CRUD
 - provider 下的模型管理
-- 能力档位到模型的映射
+- 模型选择与推理强度选择
 - OAuth / API key 等不同认证模式
 
 ### 4. provider 运行时继续通过 `pi-ai` 落地
@@ -97,9 +97,9 @@
 
 - 用户级 provider registry
 - Settings 页真实 CRUD
-- 多 provider / 多模型 / 能力档位选择
+- 多 provider / 多模型 / 推理强度选择
 - API key 型和 OAuth 型 provider 的统一数据模型
-- chat 创建新 session 时选择 provider + model/capability
+- chat 创建新 session 时选择 provider + model/thinkingLevel
 
 ### 本提案不覆盖
 
@@ -149,7 +149,7 @@ Settings 下的 models/provider 配置必须变成真实后端数据，而不是
 - 新增 provider
 - 修改 provider
 - 删除 provider
-- 配置默认模型和能力档位模型
+- 配置默认模型和默认推理强度
 - 存储 API key 或 OAuth credential material
 
 ### Chat
@@ -157,8 +157,8 @@ Settings 下的 models/provider 配置必须变成真实后端数据，而不是
 chat 页面创建新 session 时，至少要支持：
 
 - 选择 provider config
-- 选择能力档位
-- 或显式选择具体模型
+- 显式选择具体模型
+- 在模型支持时选择推理强度
 
 ### 无 provider 配置时
 
@@ -170,7 +170,27 @@ chat 页面创建新 session 时，至少要支持：
 ## 成功标准
 
 - 页面 Settings 配置会真实影响后端运行
-- provider 切换和模型切换在 chat 中可用
+- provider 切换、模型切换、推理强度选择在 chat 中可用
 - 后端不再依赖 provider 级环境变量
 - `apps/harness` 可以只依赖 job 中的 provider runtime config 运行
 - 后续其他 LLM 能力点可以直接复用同一 provider registry
+
+## 模型与推理强度的边界
+
+本提案明确不再把 `fast / balanced / strong` 当成底层能力模型。
+
+原因：
+
+- 有些 provider/model 当前没有公开的推理强度档位
+- 有些 provider/model 的推理强度多于 3 档，例如 `low / medium / high / xhigh / max`
+- `fast / balanced / strong` 最多只能作为未来 UI 层的便捷预设，不能作为 durable schema 和公开 API 的核心字段
+
+因此，底层模型统一为：
+
+- `modelId`
+- `thinkingLevel`（可选）
+
+其中：
+
+- `thinkingLevel` 只在所选模型支持推理强度控制时才出现
+- 模型是否支持、支持哪些 level，由 provider registry 中的模型元数据表达

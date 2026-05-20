@@ -166,7 +166,6 @@ test("http handler supports CRUD over per-user llm provider configs", async () =
 				baseUrl: "http://127.0.0.1:8000/v1",
 				availableModels: ["qwen3-coder-plus"],
 				defaultModelId: "qwen3-coder-plus",
-				balancedModelId: "qwen3-coder-plus",
 				apiKey: "local-key",
 			},
 		});
@@ -323,7 +322,6 @@ test("http handler supports creating a session and appending a message", async (
 			},
 			payload: {
 				providerConfigId: harness.defaultProviderConfig.providerConfigId,
-				thinkingLevel: "medium",
 				input: {
 					content: [{ type: "text", text: "第一次输入" }],
 				},
@@ -418,7 +416,6 @@ test("http handler returns SSE failure events when worker execution fails", asyn
 			},
 			payload: {
 				providerConfigId: harness.defaultProviderConfig.providerConfigId,
-				thinkingLevel: "medium",
 				input: {
 					content: [{ type: "text", text: "触发失败" }],
 				},
@@ -494,7 +491,6 @@ test("http handler persists the full assistant transcript after chunked SSE outp
 			},
 			payload: {
 				providerConfigId: harness.defaultProviderConfig.providerConfigId,
-				thinkingLevel: "medium",
 				input: {
 					content: [{ type: "text", text: "介绍下你自己。" }],
 				},

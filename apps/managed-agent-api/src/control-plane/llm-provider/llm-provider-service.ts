@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 
 import type {
-	CapabilityTier,
 	LlmProviderModelDefinition,
 	LlmProviderRuntimeConfig,
 	OAuthCredentialMaterial,
@@ -23,9 +22,6 @@ type ProviderConfigInput = {
 	headers?: Record<string, string>;
 	availableModels?: string[];
 	defaultModelId?: string;
-	fastModelId?: string;
-	balancedModelId?: string;
-	strongModelId?: string;
 	defaultThinkingLevel?: string;
 	enabled?: boolean;
 	apiKey?: string;
@@ -47,9 +43,6 @@ export type LlmProviderConfigSummary = {
 	headers: Record<string, string>;
 	availableModels: LlmProviderModelDefinition[];
 	defaultModelId: string;
-	fastModelId?: string;
-	balancedModelId?: string;
-	strongModelId?: string;
 	defaultThinkingLevel: string;
 	enabled: boolean;
 	hasStoredCredential: boolean;
@@ -57,7 +50,7 @@ export type LlmProviderConfigSummary = {
 
 type ResolvedModelSelection = {
 	modelId: string;
-	capabilityTier?: CapabilityTier;
+	thinkingLevel?: string;
 };
 
 const trimOptionalString = (value: string | undefined) => {
@@ -72,6 +65,10 @@ const normalizeAvailableModels = ({
 	requestedModels?: string[];
 	catalogDefaultModels: LlmProviderModelDefinition[];
 }) => {
+	const catalogDefaultSupportsReasoning = catalogDefaultModels.some((model) => model.supportsReasoning);
+	const catalogDefaultThinkingLevels = Array.from(
+		new Set(catalogDefaultModels.flatMap((model) => model.supportedThinkingLevels ?? [])),
+	);
 	const normalizedRequestedModels =
 		requestedModels
 			?.map((modelId) => modelId.trim())
@@ -79,7 +76,8 @@ const normalizeAvailableModels = ({
 			.map((modelId) => ({
 				modelId,
 				displayName: modelId,
-				supportsReasoning: true,
+				supportsReasoning: catalogDefaultSupportsReasoning,
+				supportedThinkingLevels: catalogDefaultThinkingLevels.length > 0 ? catalogDefaultThinkingLevels : undefined,
 			})) ?? [];
 
 	return normalizedRequestedModels.length > 0 ? normalizedRequestedModels : catalogDefaultModels;
@@ -95,9 +93,6 @@ const mapRecordToSummary = (record: LlmProviderConfigRecord): LlmProviderConfigS
 		headers: record.headers,
 		availableModels: record.availableModels,
 		defaultModelId: record.defaultModelId,
-		fastModelId: record.fastModelId,
-		balancedModelId: record.balancedModelId,
-		strongModelId: record.strongModelId,
 		defaultThinkingLevel: record.defaultThinkingLevel,
 		enabled: record.enabled,
 		hasStoredCredential: typeof record.encryptedSecret === "string" && record.encryptedSecret.length > 0,
@@ -107,45 +102,37 @@ const mapRecordToSummary = (record: LlmProviderConfigRecord): LlmProviderConfigS
 const pickModelId = ({
 	record,
 	modelId,
-	capabilityTier,
+	thinkingLevel,
+	validateThinkingLevel,
 }: {
 	record: LlmProviderConfigRecord;
 	modelId?: string;
-	capabilityTier?: CapabilityTier;
+	thinkingLevel?: string;
+	validateThinkingLevel: boolean;
 }): ResolvedModelSelection => {
-	const availableModelIds = new Set(record.availableModels.map((availableModel) => availableModel.modelId));
+	const selectedModelId = modelId ?? record.defaultModelId;
+	const modelDefinition = record.availableModels.find((availableModel) => availableModel.modelId === selectedModelId);
 
-	if (modelId) {
-		if (!availableModelIds.has(modelId)) {
-			throw new ValidationError(`model ${modelId} is not configured for provider ${record.providerConfigId}`);
-		}
-
-		return {
-			modelId,
-			capabilityTier,
-		};
+	if (!modelDefinition) {
+		throw new ValidationError(`model ${selectedModelId} is not configured for provider ${record.providerConfigId}`);
 	}
 
-	const modelIdByCapability = {
-		fast: record.fastModelId,
-		balanced: record.balancedModelId,
-		strong: record.strongModelId,
-	} as const;
-
-	if (capabilityTier) {
-		const mappedModelId = modelIdByCapability[capabilityTier];
-		if (!mappedModelId) {
-			throw new ValidationError(`provider ${record.providerConfigId} does not define a ${capabilityTier} model`);
-		}
-
-		return {
-			modelId: mappedModelId,
-			capabilityTier,
-		};
+	const selectedThinkingLevel = trimOptionalString(thinkingLevel) ?? record.defaultThinkingLevel;
+	const supportedThinkingLevels = modelDefinition.supportedThinkingLevels ?? [];
+	if (validateThinkingLevel && trimOptionalString(thinkingLevel) && supportedThinkingLevels.length === 0) {
+		throw new ValidationError(`model ${selectedModelId} does not support explicit thinkingLevel`);
+	}
+	if (
+		validateThinkingLevel &&
+		supportedThinkingLevels.length > 0 &&
+		!supportedThinkingLevels.includes(selectedThinkingLevel)
+	) {
+		throw new ValidationError(`thinkingLevel ${selectedThinkingLevel} is not supported by model ${selectedModelId}`);
 	}
 
 	return {
-		modelId: record.defaultModelId,
+		modelId: selectedModelId,
+		thinkingLevel: selectedThinkingLevel,
 	};
 };
 
@@ -154,7 +141,7 @@ const pickModelId = ({
  *
  * This service turns durable provider rows into validated session-level model
  * selections and `pi-ai` runtime config. It is the only layer that knows about
- * secret encryption, provider-type catalog rules, and capability-tier mapping.
+ * secret encryption, provider-type catalog rules, and model/thinking-level validation.
  */
 export const createLlmProviderService = ({
 	llmProviderRepository,
@@ -245,7 +232,6 @@ export const createLlmProviderService = ({
 		const defaultModelId =
 			trimOptionalString(input.defaultModelId) ??
 			existingRecord?.defaultModelId ??
-			catalogItem.defaultCapabilityModelIds.balanced ??
 			catalogItem.defaultModels[0]?.modelId;
 
 		if (!defaultModelId) {
@@ -256,44 +242,16 @@ export const createLlmProviderService = ({
 		if (!availableModelIds.has(defaultModelId)) {
 			throw new ValidationError(`default model ${defaultModelId} is not listed in availableModels`);
 		}
-
-		const resolveTierModelId = (
-			value: string | undefined,
-			existingValue: string | undefined,
-			catalogValue: string | undefined,
-		) => {
-			const explicitValue = trimOptionalString(value);
-			if (explicitValue) {
-				if (!availableModelIds.has(explicitValue)) {
-					throw new ValidationError(`capability model ${explicitValue} is not listed in availableModels`);
-				}
-
-				return explicitValue;
-			}
-
-			const inheritedValue = existingValue ?? catalogValue;
-			if (inheritedValue && availableModelIds.has(inheritedValue)) {
-				return inheritedValue;
-			}
-
-			return defaultModelId;
-		};
-
-		const fastModelId = resolveTierModelId(
-			input.fastModelId,
-			existingRecord?.fastModelId,
-			catalogItem.defaultCapabilityModelIds.fast,
-		);
-		const balancedModelId = resolveTierModelId(
-			input.balancedModelId,
-			existingRecord?.balancedModelId,
-			catalogItem.defaultCapabilityModelIds.balanced,
-		);
-		const strongModelId = resolveTierModelId(
-			input.strongModelId,
-			existingRecord?.strongModelId,
-			catalogItem.defaultCapabilityModelIds.strong,
-		);
+		const defaultModelDefinition = availableModels.find((model) => model.modelId === defaultModelId);
+		if (!defaultModelDefinition) {
+			throw new ValidationError(`default model ${defaultModelId} is not listed in availableModels`);
+		}
+		const supportedThinkingLevels = defaultModelDefinition.supportedThinkingLevels ?? [];
+		if (supportedThinkingLevels.length > 0 && !supportedThinkingLevels.includes(defaultThinkingLevel)) {
+			throw new ValidationError(
+				`defaultThinkingLevel ${defaultThinkingLevel} is not supported by model ${defaultModelId}`,
+			);
+		}
 
 		if (catalogItem.baseUrlRequired && !baseUrl) {
 			throw new ValidationError(`provider ${providerType} requires baseUrl`);
@@ -328,9 +286,6 @@ export const createLlmProviderService = ({
 				providerOptions,
 				availableModels,
 				defaultModelId,
-				fastModelId,
-				balancedModelId,
-				strongModelId,
 				defaultThinkingLevel,
 				enabled: input.enabled ?? existingRecord?.enabled ?? true,
 			} satisfies Omit<LlmProviderConfigRecord, "createdAt" | "updatedAt">,
@@ -453,7 +408,8 @@ export const createLlmProviderService = ({
 			userId: string;
 			providerConfigId: string;
 			modelId?: string;
-			capabilityTier?: CapabilityTier;
+			thinkingLevel?: string;
+			validateThinkingLevel?: boolean;
 		}): Promise<{
 			record: LlmProviderConfigRecord;
 			runtimeConfig: LlmProviderRuntimeConfig;
@@ -472,7 +428,8 @@ export const createLlmProviderService = ({
 			const resolvedModelSelection = pickModelId({
 				record,
 				modelId: trimOptionalString(input.modelId),
-				capabilityTier: input.capabilityTier,
+				thinkingLevel: trimOptionalString(input.thinkingLevel),
+				validateThinkingLevel: input.validateThinkingLevel ?? true,
 			});
 			const modelDefinition = record.availableModels.find(
 				(availableModel) => availableModel.modelId === resolvedModelSelection.modelId,
@@ -503,7 +460,6 @@ export const createLlmProviderService = ({
 						: `${catalogItem.runtimeProviderId}-${record.providerConfigId}`,
 					displayName: record.displayName,
 					modelId: resolvedModelSelection.modelId,
-					capabilityTier: resolvedModelSelection.capabilityTier,
 					authMode: record.authMode,
 					apiType: record.apiType,
 					baseUrl: record.baseUrl,

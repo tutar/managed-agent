@@ -18,7 +18,6 @@ export type SessionRecord = {
 	thinkingLevel: string;
 	providerConfigId?: string;
 	providerType?: string;
-	capabilityTier?: "fast" | "balanced" | "strong";
 	piSessionFile?: string;
 	createdAt: string;
 	updatedAt: string;

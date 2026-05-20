@@ -29,7 +29,7 @@
 | `done` | 建立会话创建 / 续写 / 失败的最小 UI 状态机 | `../proposals/01-feature-proposal.zh-CN.md` | 当前页面支持正常用户视角聊天流程 |
 | `done` | 冻结 `managed-agent-api` 的 V1 接口契约并补齐实现 | `../interfaces/api-interface-draft.zh-CN.md`、`../design/technical-design.zh-CN.md` | 已落地 rename、archive、分页和明确 SSE 生命周期 |
 | `done` | 消息刷新不丢：sandbox transcript JSONL 磁盘缓存 + 回读 | `../design/user-isolation-design.zh-CN.md` | 已按回合顺序回读，合并多段 `process.delta` / `final.output.delta`，避免刷新后出现 `user,user,assistant,assistant` 排序错乱 |
-| `done` | 用户级 LLM provider registry：Settings CRUD、provider catalog、chat provider/capability 选择 | `../proposals/05-llm-provider-registry-feature-proposal.zh-CN.md`、`../design/llm-provider-registry-design.zh-CN.md` | provider 配置已落 PostgreSQL，`web-ui` Settings 不再写 localStorage，chat 新 session 通过 `providerConfigId + modelId/capabilityTier` 选择模型。OpenAI Codex 和 GitHub Copilot 现在都支持浏览器发起的 OAuth connect/disconnect 流程。 |
+| `done` | 用户级 LLM provider registry：Settings CRUD、provider catalog、chat provider/model/thinkingLevel 选择 | `../proposals/05-llm-provider-registry-feature-proposal.zh-CN.md`、`../design/llm-provider-registry-design.zh-CN.md` | provider 配置已落 PostgreSQL，`web-ui` Settings 不再写 localStorage，chat 新 session 通过 `providerConfigId + modelId + thinkingLevel` 选择模型。OpenAI Codex 和 GitHub Copilot 现在都支持浏览器发起的 OAuth connect/disconnect 流程。 |
 
 ## Durable Storage
 

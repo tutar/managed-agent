@@ -203,8 +203,6 @@ export const createTestControlPlane = async ({
     displayName: "DeepSeek Test",
     availableModels: ["deepseek-v4-pro"],
     defaultModelId: "deepseek-v4-pro",
-    balancedModelId: "deepseek-v4-pro",
-    strongModelId: "deepseek-v4-pro",
     apiKey: "test-key",
   })
   const auditRepository = createPostgresAuditRepository({ db })

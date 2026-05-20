@@ -23,7 +23,6 @@ import type {
 export type CreateSessionRequestDto = {
 	providerConfigId: string;
 	modelId?: string;
-	capabilityTier?: "fast" | "balanced" | "strong";
 	thinkingLevel?: string;
 	input: {
 		content: InputContentItem[];
@@ -65,7 +64,6 @@ export type SessionDetailResponseDto = {
 	thinkingLevel: string;
 	providerConfigId?: string;
 	providerType?: string;
-	capabilityTier?: "fast" | "balanced" | "strong";
 	createdAt: string;
 	lastActiveAt: string;
 	entries: SessionResponseEntryDto[];
@@ -115,7 +113,6 @@ export const toCreateSessionRequestDto = (body: CreateSessionRequestSchemaDto): 
 	return {
 		providerConfigId: body.providerConfigId.trim(),
 		modelId: trimOptionalString(body.modelId),
-		capabilityTier: body.capabilityTier,
 		thinkingLevel: trimOptionalString(body.thinkingLevel),
 		input: {
 			content: body.input.content as InputContentItem[],
@@ -132,11 +129,10 @@ export const parseCreateSessionRequestDto = (body: unknown): CreateSessionReques
 		throw new ValidationError("input.content is required");
 	}
 
-	const { input, providerConfigId, modelId, capabilityTier, thinkingLevel } = body as {
+	const { input, providerConfigId, modelId, thinkingLevel } = body as {
 		input?: { content?: unknown[] };
 		providerConfigId?: unknown;
 		modelId?: unknown;
-		capabilityTier?: unknown;
 		thinkingLevel?: unknown;
 	};
 
@@ -151,10 +147,6 @@ export const parseCreateSessionRequestDto = (body: unknown): CreateSessionReques
 	return {
 		providerConfigId: providerConfigId.trim(),
 		modelId: typeof modelId === "string" ? trimOptionalString(modelId) : undefined,
-		capabilityTier:
-			capabilityTier === "fast" || capabilityTier === "balanced" || capabilityTier === "strong"
-				? capabilityTier
-				: undefined,
 		thinkingLevel: typeof thinkingLevel === "string" ? trimOptionalString(thinkingLevel) : undefined,
 		input: {
 			content: input.content as InputContentItem[],
@@ -241,7 +233,6 @@ export const toSessionDetailResponseDto = (
 		thinkingLevel: session.thinkingLevel,
 		providerConfigId: session.providerConfigId,
 		providerType: session.providerType,
-		capabilityTier: session.capabilityTier,
 		createdAt: session.createdAt,
 		lastActiveAt: session.updatedAt,
 		entries: session.entries.map((entry) => ({

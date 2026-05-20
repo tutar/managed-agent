@@ -42,7 +42,7 @@ provider 配置的 durable truth 固定为 PostgreSQL。
 
 | 组件 | 责任 |
 |---|---|
-| `web-ui` | 管理 provider 配置、读取 provider catalog、提交 session 时选择 provider/model/capability |
+| `web-ui` | 管理 provider 配置、读取 provider catalog、提交 session 时选择 provider/model/thinkingLevel |
 | `Managed Agent API` | 读写 provider 配置、加密 secret、验证 provider、把配置解析成运行时 provider config |
 | `apps/harness` | 消费已解析的 provider runtime config，并通过 `pi-ai` 运行 |
 | `pi-ai` | 真正对接各 provider 的执行 adapter |
@@ -84,9 +84,6 @@ user account
 - `providerOptionsJson`
 - `availableModelsJson`
 - `defaultModelId`
-- `fastModelId`
-- `balancedModelId`
-- `strongModelId`
 - `defaultThinkingLevel`
 - `enabled`
 - `createdAt`
@@ -96,8 +93,8 @@ user account
 
 - `providerType` 是 catalog 类型，例如 `deepseek`、`openai-compatible`
 - `encryptedSecret` 存加密后的 API key 或 OAuth credential material
-- `availableModelsJson` 存该用户实例下可见模型列表
-- `fast/balanced/strong` 存能力档位到模型的映射
+- `availableModelsJson` 存该用户实例下可见模型列表和模型元数据
+- 模型元数据可选包含 `supportedThinkingLevels`
 
 ### `managed_agent_sessions` 扩展字段
 
@@ -105,13 +102,12 @@ session metadata 中新增：
 
 - `providerConfigId`
 - `providerType`
-- `capabilityTier`
 
 设计说明：
 
 - session 一旦创建，后续续写默认沿用同一 provider config
 - `model` 字段仍保留，但它保存的是已经解析后的运行时模型标识
-- `capabilityTier` 保存创建该 session 时使用的能力档位
+- `thinkingLevel` 保存创建该 session 时实际使用的推理强度
 
 ## Secret 存储策略
 
@@ -165,7 +161,6 @@ provider secret 不以明文落库。
 - `supportsCustomHeaders`
 - `baseUrlRequired`
 - `defaultModels`
-- `defaultCapabilityModelIds`
 - `defaultThinkingLevel`
 
 catalog 既服务 API，也服务 Settings UI。
@@ -177,21 +172,27 @@ catalog 既服务 API，也服务 Settings UI。
 session 创建时统一采用两层选择：
 
 1. `providerConfigId`
-2. `modelId` 或 `capabilityTier`
+2. `modelId`
 
-### 能力档位
+### 推理强度
 
-当前固定三档：
+`thinkingLevel` 是可选的第二维度，但它不再等价于固定三档。
 
-- `fast`
-- `balanced`
-- `strong`
+一个 provider/model 可能：
+
+- 不支持显式推理强度
+- 支持 `low / medium / high`
+- 支持 `low / medium / high / xhigh`
+- 支持 `low / medium / high / xhigh / max`
+
+因此它必须作为模型元数据表达，而不是平台硬编码枚举。
 
 解析规则：
 
 - 如果请求显式传 `modelId`，直接使用该模型
-- 如果请求传 `capabilityTier`，从 provider config 的 capability mapping 解析到具体模型
-- 如果两者都未传，则使用 provider config 的 `defaultModelId`
+- 如果请求显式传 `thinkingLevel`，只有在所选模型支持该 level 时才允许通过
+- 如果未传 `modelId`，则使用 provider config 的 `defaultModelId`
+- 如果未传 `thinkingLevel`，则使用 provider config 的 `defaultThinkingLevel`
 
 ## 运行时解析
 
@@ -204,7 +205,7 @@ session 创建时统一采用两层选择：
 - `runtimeProviderId`
 - `displayName`
 - `modelId`
-- `capabilityTier`
+- `thinkingLevel`
 - `authMode`
 - `apiType`
 - `baseUrl`
@@ -290,7 +291,7 @@ session 创建接口新增输入：
 
 - `providerConfigId`
 - `modelId`
-- `capabilityTier`
+- `thinkingLevel`
 
 ## Web UI 设计
 
@@ -305,7 +306,7 @@ Settings 页不再写 localStorage。
 - 创建、编辑、删除 provider config
 - 展示 credential 是否已存储
 - 对 OAuth provider 发起 connect / disconnect
-- 编辑 default model 和 capability tier mappings
+- 编辑 default model 和 default thinking level
 
 ### OAuth 交互
 
@@ -322,7 +323,8 @@ Settings 页不再写 localStorage。
 chat 新建 session 时：
 
 - 必须先选择一个可用 `providerConfigId`
-- 可选 `capabilityTier`
+- 选择一个具体 `modelId`
+- 在模型支持时可选 `thinkingLevel`
 - 没有任何可用 provider 时禁止发送
 
 ## 迁移策略
@@ -347,16 +349,31 @@ chat 新建 session 时：
 - provider repository CRUD
 - secret 加密/解密 round-trip
 - provider validation
-- capability tier -> model 解析
-- session create 使用 providerConfigId + capabilityTier
+- thinkingLevel 校验
+- session create 使用 providerConfigId + modelId/thinkingLevel
 
 ### 前端
 
 - Settings CRUD
-- chat provider/capability 选择
+- chat provider/model/thinkingLevel 选择
 - 无 provider 时的禁用与引导
 
 ### 运行时
 
 - `apps/harness` 只通过 job 中的 provider runtime config 运行
 - 不再依赖 provider 级环境变量
+
+## 关于 UI 预设
+
+`fast / balanced / strong` 如果未来继续存在，只能作为 UI 层的可选便捷预设。
+
+它们不再进入：
+
+- durable schema
+- 核心服务对象
+- 公开 session API 请求字段
+
+也就是说，底层真实能力模型固定为：
+
+- `modelId`
+- `thinkingLevel`

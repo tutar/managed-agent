@@ -1,10 +1,4 @@
-import type {
-	CapabilityTier,
-	LlmProviderModelDefinition,
-	OAuthCredentialMaterial,
-	ProviderApiType,
-	ProviderAuthMode,
-} from "@managed-agent/contracts";
+import type { LlmProviderModelDefinition, ProviderApiType, ProviderAuthMode } from "@managed-agent/contracts";
 
 /**
  * Static provider-type catalog used by the API and the settings UI.
@@ -24,15 +18,9 @@ export type LlmProviderTypeCatalogItem = {
 	supportsCustomHeaders: boolean;
 	baseUrlRequired: boolean;
 	defaultModels: LlmProviderModelDefinition[];
-	defaultCapabilityModelIds: Partial<Record<CapabilityTier, string>>;
 	defaultThinkingLevel: string;
 	secretFields: Array<"apiKey" | "oauthCredential">;
 	helpText?: string;
-};
-
-export type StoredProviderSecretMaterial = {
-	apiKey?: string;
-	oauthCredential?: OAuthCredentialMaterial;
 };
 
 const createBuiltInCatalogItem = ({
@@ -42,6 +30,7 @@ const createBuiltInCatalogItem = ({
 	authMode = "api_key",
 	defaultModelId,
 	defaultThinkingLevel = "medium",
+	supportedThinkingLevels,
 	helpText,
 }: {
 	providerType: string;
@@ -50,6 +39,7 @@ const createBuiltInCatalogItem = ({
 	authMode?: ProviderAuthMode;
 	defaultModelId: string;
 	defaultThinkingLevel?: string;
+	supportedThinkingLevels?: string[];
 	helpText?: string;
 }): LlmProviderTypeCatalogItem => {
 	return {
@@ -66,12 +56,9 @@ const createBuiltInCatalogItem = ({
 				modelId: defaultModelId,
 				displayName: defaultModelId,
 				supportsReasoning: true,
+				supportedThinkingLevels,
 			},
 		],
-		defaultCapabilityModelIds: {
-			balanced: defaultModelId,
-			strong: defaultModelId,
-		},
 		defaultThinkingLevel,
 		secretFields: authMode === "oauth" ? ["oauthCredential"] : authMode === "none" ? [] : ["apiKey"],
 		helpText,
@@ -85,6 +72,7 @@ const createCompatibleCatalogItem = ({
 	authMode = "api_key",
 	defaultModelId,
 	defaultThinkingLevel = "medium",
+	supportedThinkingLevels,
 	helpText,
 }: {
 	providerType: string;
@@ -93,6 +81,7 @@ const createCompatibleCatalogItem = ({
 	authMode?: ProviderAuthMode;
 	defaultModelId: string;
 	defaultThinkingLevel?: string;
+	supportedThinkingLevels?: string[];
 	helpText?: string;
 }): LlmProviderTypeCatalogItem => {
 	return {
@@ -110,12 +99,9 @@ const createCompatibleCatalogItem = ({
 				modelId: defaultModelId,
 				displayName: defaultModelId,
 				supportsReasoning: true,
+				supportedThinkingLevels,
 			},
 		],
-		defaultCapabilityModelIds: {
-			balanced: defaultModelId,
-			strong: defaultModelId,
-		},
 		defaultThinkingLevel,
 		secretFields: authMode === "oauth" ? ["oauthCredential"] : authMode === "none" ? [] : ["apiKey"],
 		helpText,
@@ -127,11 +113,13 @@ export const LLM_PROVIDER_TYPE_CATALOG: LlmProviderTypeCatalogItem[] = [
 		providerType: "openai",
 		displayName: "OpenAI",
 		defaultModelId: "gpt-5.4",
+		supportedThinkingLevels: ["low", "medium", "high", "xhigh"],
 	}),
 	createBuiltInCatalogItem({
 		providerType: "azure-openai-responses",
 		displayName: "Azure OpenAI (Responses)",
 		defaultModelId: "gpt-5.4",
+		supportedThinkingLevels: ["low", "medium", "high", "xhigh"],
 		helpText: "Configure the Azure endpoint as a custom base URL if you are not using the default account endpoint.",
 	}),
 	createBuiltInCatalogItem({
@@ -139,6 +127,7 @@ export const LLM_PROVIDER_TYPE_CATALOG: LlmProviderTypeCatalogItem[] = [
 		displayName: "OpenAI Codex (ChatGPT Plus/Pro)",
 		authMode: "oauth",
 		defaultModelId: "gpt-5.5",
+		supportedThinkingLevels: ["low", "medium", "high", "xhigh"],
 		helpText: "Requires OAuth credential material from the linked ChatGPT subscription.",
 	}),
 	createBuiltInCatalogItem({
@@ -150,6 +139,7 @@ export const LLM_PROVIDER_TYPE_CATALOG: LlmProviderTypeCatalogItem[] = [
 		providerType: "anthropic",
 		displayName: "Anthropic",
 		defaultModelId: "claude-opus-4-7",
+		supportedThinkingLevels: ["low", "medium", "high", "xhigh", "max"],
 	}),
 	createBuiltInCatalogItem({
 		providerType: "google",

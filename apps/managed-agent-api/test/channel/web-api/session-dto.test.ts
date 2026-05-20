@@ -14,7 +14,7 @@ import {
 test("parseCreateSessionRequestDto accepts the minimal supported input", () => {
   const dto = parseCreateSessionRequestDto({
     providerConfigId: "provider_1",
-    capabilityTier: "strong",
+    modelId: "gpt-5.4",
     thinkingLevel: "medium",
     input: {
       content: [{ type: "text", text: "分析项目结构" }],
@@ -22,7 +22,7 @@ test("parseCreateSessionRequestDto accepts the minimal supported input", () => {
   })
 
   assert.equal(dto.providerConfigId, "provider_1")
-  assert.equal(dto.capabilityTier, "strong")
+  assert.equal(dto.modelId, "gpt-5.4")
   assert.equal(dto.thinkingLevel, "medium")
   assert.equal(dto.input.content[0]?.type, "text")
 })

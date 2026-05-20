@@ -1,5 +1,4 @@
 import type {
-	CapabilityTier,
 	LlmProviderModelDefinition,
 	OAuthCredentialMaterial,
 	ProviderApiType,
@@ -24,9 +23,6 @@ export type LlmProviderConfigRecord = {
 	providerOptions: Record<string, unknown>;
 	availableModels: LlmProviderModelDefinition[];
 	defaultModelId: string;
-	fastModelId?: string;
-	balancedModelId?: string;
-	strongModelId?: string;
 	defaultThinkingLevel: string;
 	enabled: boolean;
 	createdAt: string;
@@ -43,11 +39,6 @@ export type UpdateLlmProviderConfigRecord = Partial<
 > & {
 	encryptedSecret?: string | null;
 	updatedAt: string;
-};
-
-export type ResolvedProviderModelSelection = {
-	modelId: string;
-	capabilityTier?: CapabilityTier;
 };
 
 /**
