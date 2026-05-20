@@ -13,6 +13,7 @@ servers:
 tags:
   - name: Health
   - name: Auth
+  - name: LLM Providers
   - name: Sessions
   - name: Triggers
 paths:
@@ -127,6 +128,238 @@ paths:
                 $ref: "#/components/schemas/UserSessionsResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+  /llm-provider-types:
+    get:
+      tags: [LLM Providers]
+      summary: List supported provider types
+      operationId: listLlmProviderTypes
+      responses:
+        "200":
+          description: Static provider-type catalog exposed to the Settings UI
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LlmProviderType"
+  /me/llm-providers:
+    get:
+      tags: [LLM Providers]
+      summary: List provider configs owned by the current user
+      operationId: listUserLlmProviders
+      security:
+        - SessionCookieAuth: []
+      responses:
+        "200":
+          description: User-owned provider configs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LlmProviderConfig"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [LLM Providers]
+      summary: Create one user-owned provider config
+      operationId: createUserLlmProvider
+      security:
+        - SessionCookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertLlmProviderConfigRequest"
+      responses:
+        "200":
+          description: Provider config persisted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmProviderConfig"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /me/llm-providers/{providerConfigId}:
+    patch:
+      tags: [LLM Providers]
+      summary: Update one user-owned provider config
+      operationId: updateUserLlmProvider
+      security:
+        - SessionCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderConfigIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchLlmProviderConfigRequest"
+      responses:
+        "200":
+          description: Provider config updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmProviderConfig"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [LLM Providers]
+      summary: Delete one user-owned provider config
+      operationId: deleteUserLlmProvider
+      security:
+        - SessionCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderConfigIdPath"
+      responses:
+        "204":
+          description: Provider config deleted
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/llm-providers/{providerConfigId}/validate:
+    post:
+      tags: [LLM Providers]
+      summary: Validate one user-owned provider config
+      operationId: validateUserLlmProvider
+      security:
+        - SessionCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderConfigIdPath"
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmProviderValidationResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/llm-providers/{providerConfigId}/oauth/start:
+    post:
+      tags: [LLM Providers]
+      summary: Start an OAuth browser flow for one user-owned provider config
+      operationId: startUserLlmProviderOauthFlow
+      security:
+        - SessionCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderConfigIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LlmProviderOAuthStartRequest"
+      responses:
+        "200":
+          description: OAuth flow started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmProviderOAuthFlow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/llm-providers/{providerConfigId}/oauth/flows/{flowId}:
+    get:
+      tags: [LLM Providers]
+      summary: Get one in-flight OAuth browser flow
+      operationId: getUserLlmProviderOauthFlow
+      security:
+        - SessionCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderConfigIdPath"
+        - $ref: "#/components/parameters/OAuthFlowIdPath"
+      responses:
+        "200":
+          description: OAuth flow status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmProviderOAuthFlow"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /me/llm-providers/{providerConfigId}/oauth-account:
+    delete:
+      tags: [LLM Providers]
+      summary: Remove the stored OAuth credential from one user-owned provider config
+      operationId: deleteUserLlmProviderOauthAccount
+      security:
+        - SessionCookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProviderConfigIdPath"
+      responses:
+        "200":
+          description: Provider config updated after credential removal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LlmProviderConfig"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /oauth/llm-provider-flows/openai-codex/callback:
+    get:
+      tags: [LLM Providers]
+      summary: Browser callback target for OpenAI Codex OAuth flows
+      operationId: completeOpenAICodexOauthCallback
+      parameters:
+        - in: query
+          name: state
+          required: false
+          schema:
+            type: string
+        - in: query
+          name: code
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OAuth callback completed
+          content:
+            text/html:
+              schema:
+                type: string
+        "400":
+          description: Callback query is missing required parameters
+          content:
+            text/html:
+              schema:
+                type: string
+        "404":
+          description: OAuth flow was not found
+          content:
+            text/html:
+              schema:
+                type: string
+        "500":
+          description: OAuth callback failed
+          content:
+            text/html:
+              schema:
+                type: string
   /sessions:
     post:
       tags: [Sessions]
@@ -397,6 +630,18 @@ components:
         instead of passing `userId` explicitly.
       schema:
         type: string
+    ProviderConfigIdPath:
+      name: providerConfigId
+      in: path
+      required: true
+      schema:
+        type: string
+    OAuthFlowIdPath:
+      name: flowId
+      in: path
+      required: true
+      schema:
+        type: string
     IncludeProcessQuery:
       name: includeProcess
       in: query
@@ -461,6 +706,16 @@ components:
             error:
               code: session_state_conflict
               message: session sess_running cannot be archived while running
+    NotFound:
+      description: Requested resource does not exist in the current user scope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error:
+              code: not_found
+              message: resource not found
     InternalError:
       description: Request failed before a normal response could be completed
       content:
@@ -522,6 +777,272 @@ components:
         loggedOut:
           type: boolean
           const: true
+    CapabilityTier:
+      type: string
+      enum: [fast, balanced, strong]
+    LlmProviderModel:
+      type: object
+      required: [modelId, displayName, supportsReasoning]
+      properties:
+        modelId:
+          type: string
+        displayName:
+          type: string
+        supportsReasoning:
+          type: boolean
+    OAuthCredential:
+      type: object
+      required: [access, refresh, expires]
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        expires:
+          type: integer
+          minimum: 0
+        accountId:
+          type: string
+        enterpriseUrl:
+          type: string
+    LlmProviderType:
+      type: object
+      required:
+        [
+          providerType,
+          displayName,
+          authMode,
+          runtimeProviderId,
+          usesBuiltInProvider,
+          supportsCustomBaseUrl,
+          supportsCustomHeaders,
+          baseUrlRequired,
+          defaultModels,
+          defaultCapabilityModelIds,
+          defaultThinkingLevel,
+          secretFields
+        ]
+      properties:
+        providerType:
+          type: string
+        displayName:
+          type: string
+        authMode:
+          type: string
+          enum: [api_key, oauth, none]
+        runtimeProviderId:
+          type: string
+        usesBuiltInProvider:
+          type: boolean
+        apiType:
+          type: string
+          enum:
+            [openai-completions, openai-responses, anthropic-messages, google-generative-ai]
+        supportsCustomBaseUrl:
+          type: boolean
+        supportsCustomHeaders:
+          type: boolean
+        baseUrlRequired:
+          type: boolean
+        defaultModels:
+          type: array
+          items:
+            $ref: "#/components/schemas/LlmProviderModel"
+        defaultCapabilityModelIds:
+          type: object
+          properties:
+            fast:
+              type: string
+            balanced:
+              type: string
+            strong:
+              type: string
+        defaultThinkingLevel:
+          type: string
+        secretFields:
+          type: array
+          items:
+            type: string
+            enum: [apiKey, oauthCredential]
+        helpText:
+          type: string
+    LlmProviderConfig:
+      type: object
+      required:
+        [
+          providerConfigId,
+          providerType,
+          displayName,
+          authMode,
+          headers,
+          availableModels,
+          defaultModelId,
+          defaultThinkingLevel,
+          enabled,
+          hasStoredCredential
+        ]
+      properties:
+        providerConfigId:
+          type: string
+        providerType:
+          type: string
+        displayName:
+          type: string
+        authMode:
+          type: string
+          enum: [api_key, oauth, none]
+        baseUrl:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        availableModels:
+          type: array
+          items:
+            $ref: "#/components/schemas/LlmProviderModel"
+        defaultModelId:
+          type: string
+        fastModelId:
+          type: string
+        balancedModelId:
+          type: string
+        strongModelId:
+          type: string
+        defaultThinkingLevel:
+          type: string
+        enabled:
+          type: boolean
+        hasStoredCredential:
+          type: boolean
+    UpsertLlmProviderConfigRequest:
+      type: object
+      required: [providerType]
+      properties:
+        providerType:
+          type: string
+          minLength: 1
+        displayName:
+          type: string
+          minLength: 1
+        baseUrl:
+          type: string
+          minLength: 1
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        availableModels:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            minLength: 1
+        defaultModelId:
+          type: string
+          minLength: 1
+        fastModelId:
+          type: string
+          minLength: 1
+        balancedModelId:
+          type: string
+          minLength: 1
+        strongModelId:
+          type: string
+          minLength: 1
+        defaultThinkingLevel:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+        apiKey:
+          type: string
+          minLength: 1
+        oauthCredential:
+          $ref: "#/components/schemas/OAuthCredential"
+    PatchLlmProviderConfigRequest:
+      type: object
+      properties:
+        providerType:
+          type: string
+          minLength: 1
+        displayName:
+          type: string
+          minLength: 1
+        baseUrl:
+          type: string
+          minLength: 1
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        availableModels:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            minLength: 1
+        defaultModelId:
+          type: string
+          minLength: 1
+        fastModelId:
+          type: string
+          minLength: 1
+        balancedModelId:
+          type: string
+          minLength: 1
+        strongModelId:
+          type: string
+          minLength: 1
+        defaultThinkingLevel:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+        apiKey:
+          type: string
+          minLength: 1
+        oauthCredential:
+          $ref: "#/components/schemas/OAuthCredential"
+    LlmProviderValidationResponse:
+      type: object
+      required: [providerConfigId, valid, errors]
+      properties:
+        providerConfigId:
+          type: string
+        valid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: string
+    LlmProviderOAuthStartRequest:
+      type: object
+      properties:
+        enterpriseUrl:
+          type: string
+          minLength: 1
+    LlmProviderOAuthFlow:
+      type: object
+      required: [flowId, status, expiresAt, usesManagedCallback]
+      properties:
+        flowId:
+          type: string
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        authUrl:
+          type: string
+        instructions:
+          type: string
+        error:
+          type: string
+        expiresAt:
+          type: integer
+        completedAt:
+          type: string
+        usesManagedCallback:
+          type: boolean
     ContentItem:
       oneOf:
         - $ref: "#/components/schemas/TextContentItem"
@@ -598,13 +1119,19 @@ components:
             $ref: "#/components/schemas/InputContentItem"
     CreateSessionRequest:
       type: object
-      required: [input]
+      required: [providerConfigId, input]
       properties:
-        model:
+        providerConfigId:
           type: string
+          description: User-owned provider config selected for this session.
+        modelId:
+          type: string
+          description: Explicit model id configured under the selected provider.
+        capabilityTier:
+          allOf:
+            - $ref: "#/components/schemas/CapabilityTier"
           description: >
-            Requested model id in `provider/model` format. Example:
-            `deepseek/deepseek-v4-pro`.
+            Optional capability tier resolved by the selected provider config.
         thinkingLevel:
           type: string
           description: Requested reasoning level.
@@ -664,6 +1191,13 @@ components:
           enum: [idle, running, error]
         model:
           type: string
+          description: Resolved runtime model id in `provider/model` format.
+        providerConfigId:
+          type: string
+        providerType:
+          type: string
+        capabilityTier:
+          $ref: "#/components/schemas/CapabilityTier"
         thinkingLevel:
           type: string
         createdAt:

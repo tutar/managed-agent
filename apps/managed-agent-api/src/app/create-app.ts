@@ -2,6 +2,8 @@ import type { FastifyInstance, FastifyReply } from "fastify";
 import Fastify from "fastify";
 import type { CreateMessageRequestDto, CreateSessionRequestDto } from "../channel/web-api/dto/session-dto.js";
 import { registerWebApiAdapter } from "../channel/web-api-adapter.js";
+import type { LlmProviderOAuthService } from "../control-plane/llm-provider/llm-provider-oauth-service.js";
+import type { LlmProviderService } from "../control-plane/llm-provider/llm-provider-service.js";
 import type {
 	SessionRecord,
 	SessionStatus,
@@ -22,6 +24,8 @@ export const createApiApp = async ({
 	managedSessionService,
 	triggerService,
 	authService,
+	llmProviderService,
+	llmProviderOAuthService,
 	authorizationGuard,
 	sessionCookieManager,
 }: {
@@ -82,6 +86,8 @@ export const createApiApp = async ({
 		}>;
 		logout(loginSessionId: string): Promise<void>;
 	};
+	llmProviderService: LlmProviderService;
+	llmProviderOAuthService: LlmProviderOAuthService;
 	authorizationGuard: AuthorizationGuard;
 	sessionCookieManager: {
 		setLoginSessionCookie(reply: FastifyReply, loginSessionId: string): void;
@@ -99,6 +105,8 @@ export const createApiApp = async ({
 		managedSessionService,
 		triggerService,
 		authService,
+		llmProviderService,
+		llmProviderOAuthService,
 		authorizationGuard,
 		sessionCookieManager,
 	});

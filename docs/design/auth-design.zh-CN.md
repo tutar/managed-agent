@@ -6,6 +6,7 @@
   - [../proposals/03-auth-foundation-feature-proposal.zh-CN.md](../proposals/03-auth-foundation-feature-proposal.zh-CN.md)
   - [../proposals/01-feature-proposal.zh-CN.md](../proposals/01-feature-proposal.zh-CN.md)
   - [../proposals/04-multi-tenant-feature-proposal.zh-CN.md](../proposals/04-multi-tenant-feature-proposal.zh-CN.md)
+  - [../proposals/05-llm-provider-registry-feature-proposal.zh-CN.md](../proposals/05-llm-provider-registry-feature-proposal.zh-CN.md)
 - `Related Interfaces`:
   - [../interfaces/api-interface-draft.zh-CN.md](../interfaces/api-interface-draft.zh-CN.md)
 
@@ -244,6 +245,24 @@ auth 接入只新增一层：
 - worker 不消费 auth state
 - 不把密码、cookie 或认证细节写入 transcript
 - 不让 `agent session` 承担登录态语义
+
+## 与用户级 Provider 凭据的关系
+
+用户级 LLM provider registry 建立后，需要明确区分三类对象：
+
+| 对象 | 作用 | durable truth |
+|---|---|---|
+| `login session` | 认证态 | PostgreSQL |
+| `user account` | 用户身份主键 | PostgreSQL |
+| provider credential | 用户拥有的 LLM provider 凭据 | PostgreSQL（加密后） |
+
+约束：
+
+- provider credential 归用户所有，不归 `login session` 所有
+- 注销当前 `login session` 不应删除 provider credential
+- worker/harness 不读取登录 cookie，只消费 API 解析后的 provider runtime config
+- OAuth 型 provider 的 credential material 也属于用户级 durable config，而不是浏览器临时登录态
+- 浏览器中的 OAuth 授权页只用于完成第三方 provider 绑定；授权完成后的 credential 仍作为用户级 provider config 持久化，而不是登录态附属数据
 
 ## 与多租户的衔接
 

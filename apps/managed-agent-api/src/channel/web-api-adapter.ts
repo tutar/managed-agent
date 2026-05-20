@@ -1,4 +1,6 @@
 import type { FastifyInstance, FastifyReply } from "fastify";
+import type { LlmProviderOAuthService } from "../control-plane/llm-provider/llm-provider-oauth-service.js";
+import type { LlmProviderService } from "../control-plane/llm-provider/llm-provider-service.js";
 import type {
 	SessionRecord,
 	SessionStatus,
@@ -8,6 +10,7 @@ import type { AuthorizationGuard } from "../identity/authorization-guard.js";
 import type { CreateMessageRequestDto, CreateSessionRequestDto } from "./web-api/dto/session-dto.js";
 import { registerAuthRoutes } from "./web-api/routes/auth-routes.js";
 import { registerHealthRoutes } from "./web-api/routes/health-routes.js";
+import { registerLlmProviderRoutes } from "./web-api/routes/llm-provider-routes.js";
 import { registerSessionRoutes } from "./web-api/routes/session-routes.js";
 import { registerTriggerRoutes } from "./web-api/routes/trigger-routes.js";
 import { createStreamResponseProxy } from "./web-api/sse/stream-response-proxy.js";
@@ -24,6 +27,8 @@ export const registerWebApiAdapter = (
 		managedSessionService,
 		triggerService,
 		authService,
+		llmProviderService,
+		llmProviderOAuthService,
 		authorizationGuard,
 		sessionCookieManager,
 	}: {
@@ -84,6 +89,8 @@ export const registerWebApiAdapter = (
 			}>;
 			logout(loginSessionId: string): Promise<void>;
 		};
+		llmProviderService: LlmProviderService;
+		llmProviderOAuthService: LlmProviderOAuthService;
 		authorizationGuard: AuthorizationGuard;
 		sessionCookieManager: {
 			setLoginSessionCookie(reply: FastifyReply, loginSessionId: string): void;
@@ -96,6 +103,11 @@ export const registerWebApiAdapter = (
 		authService,
 		authorizationGuard,
 		sessionCookieManager,
+	});
+	registerLlmProviderRoutes(app, {
+		authorizationGuard,
+		llmProviderService,
+		llmProviderOAuthService,
 	});
 	registerSessionRoutes(app, {
 		managedSessionService,

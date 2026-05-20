@@ -12,6 +12,9 @@ import type { SessionExecutor } from "@managed-agent/contracts"
 import { createMockSessionExecutor } from "../../src/harness-worker/mock-executor.js"
 import { createApiApp } from "../../src/app/create-app.js"
 import { createAuditService } from "../../src/control-plane/audit/audit-service.js"
+import { createLlmProviderOAuthService } from "../../src/control-plane/llm-provider/llm-provider-oauth-service.js"
+import { createLlmProviderService } from "../../src/control-plane/llm-provider/llm-provider-service.js"
+import { createPostgresLlmProviderRepository } from "../../src/control-plane/llm-provider/repositories/postgres-llm-provider-repository.js"
 import { createActiveSessionRegistry } from "../../src/control-plane/session/active-session-registry.js"
 import {
   createRemoteHarnessWorkerGateway,
@@ -169,6 +172,7 @@ export const createTestControlPlane = async ({
   executor?: SessionExecutor
   executorFactory?: (input: { transcriptsRoot: string }) => SessionExecutor
 } = {}) => {
+  process.env.MANAGED_AGENT_SECRETS_KEY ??= "managed-agent-test-secrets-key"
   const { db, client } = await createTestManagedAgentDatabase()
   const mountRoot = mkdtempSync(join(tmpdir(), "managed-agent-test-mount-"))
   const transcriptsRoot = join(mountRoot, "transcripts")
@@ -183,9 +187,25 @@ export const createTestControlPlane = async ({
   })
   const authRepository = createPostgresAuthRepository({ db })
   const authService = createAuthService({ authRepository })
-  await authService.ensureDevelopmentUser({
+  const developmentUser = await authService.ensureDevelopmentUser({
     username: "agentos",
     password: "agentos",
+  })
+  const llmProviderRepository = createPostgresLlmProviderRepository({ db })
+  const llmProviderService = createLlmProviderService({
+    llmProviderRepository,
+  })
+  const llmProviderOAuthService = createLlmProviderOAuthService({
+    llmProviderService,
+  })
+  const defaultProviderConfig = await llmProviderService.createProviderConfig(developmentUser.userId, {
+    providerType: "deepseek",
+    displayName: "DeepSeek Test",
+    availableModels: ["deepseek-v4-pro"],
+    defaultModelId: "deepseek-v4-pro",
+    balancedModelId: "deepseek-v4-pro",
+    strongModelId: "deepseek-v4-pro",
+    apiKey: "test-key",
   })
   const auditRepository = createPostgresAuditRepository({ db })
   const auditService = createAuditService({ auditRepository })
@@ -213,6 +233,7 @@ export const createTestControlPlane = async ({
     auditService,
     eventPublisher,
     workerGateway,
+    llmProviderService,
   })
   const authorizationGuard = createAuthorizationGuard({
     currentUserResolver,
@@ -226,9 +247,13 @@ export const createTestControlPlane = async ({
     db,
     client,
     transcriptsRoot,
+    developmentUser,
+    defaultProviderConfig,
     sessionRepository,
     auditRepository,
     auditService,
+    llmProviderService,
+    llmProviderOAuthService,
     managedSessionService,
     triggerService: createTriggerService(),
     async createApp() {
@@ -236,6 +261,8 @@ export const createTestControlPlane = async ({
         managedSessionService,
         triggerService: createTriggerService(),
         authService,
+        llmProviderService,
+        llmProviderOAuthService,
         authorizationGuard,
         sessionCookieManager,
       })

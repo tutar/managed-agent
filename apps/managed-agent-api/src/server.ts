@@ -1,6 +1,9 @@
 import { createApiApp } from "./app/create-app.js";
 import { createAuditRepository } from "./control-plane/audit/audit-repository.js";
 import { createAuditService } from "./control-plane/audit/audit-service.js";
+import { createLlmProviderOAuthService } from "./control-plane/llm-provider/llm-provider-oauth-service.js";
+import { createLlmProviderService } from "./control-plane/llm-provider/llm-provider-service.js";
+import { createPostgresLlmProviderRepository } from "./control-plane/llm-provider/repositories/postgres-llm-provider-repository.js";
 import { createActiveSessionRegistry } from "./control-plane/session/active-session-registry.js";
 import { createEventPublisher } from "./control-plane/session/event-publisher.js";
 import type { HarnessWorkerGateway } from "./control-plane/session/harness-worker-client.js";
@@ -39,6 +42,9 @@ const sessionRepository = await createSessionRepository({
 const authRepository = createPostgresAuthRepository({
 	db: durableDatabase.db,
 });
+const llmProviderRepository = createPostgresLlmProviderRepository({
+	db: durableDatabase.db,
+});
 const auditRepository = await createAuditRepository({
 	db: durableDatabase.db,
 });
@@ -54,6 +60,12 @@ const workerGateway: HarnessWorkerGateway = {
 const authService = createAuthService({
 	authRepository,
 });
+const llmProviderService = createLlmProviderService({
+	llmProviderRepository,
+});
+const llmProviderOAuthService = createLlmProviderOAuthService({
+	llmProviderService,
+});
 const sessionCookieManager = createSessionCookieManager();
 const currentUserResolver = createCurrentUserResolver({
 	authService,
@@ -64,6 +76,7 @@ const managedSessionService = createManagedSessionService({
 	auditService,
 	eventPublisher,
 	workerGateway,
+	llmProviderService,
 });
 const authorizationGuard = createAuthorizationGuard({
 	currentUserResolver,
@@ -77,6 +90,8 @@ const app = await createApiApp({
 	managedSessionService,
 	triggerService,
 	authService,
+	llmProviderService,
+	llmProviderOAuthService,
 	authorizationGuard,
 	sessionCookieManager,
 });

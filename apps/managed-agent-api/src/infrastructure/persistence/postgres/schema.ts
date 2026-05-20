@@ -1,4 +1,4 @@
-import { bigint, index, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
+import { bigint, boolean, index, pgTable, primaryKey, text } from "drizzle-orm/pg-core";
 
 /**
  * PostgreSQL schema for durable control-plane metadata.
@@ -16,6 +16,9 @@ export const sessionsTable = pgTable(
 		status: text("status").notNull(),
 		model: text("model").notNull(),
 		thinkingLevel: text("thinking_level").notNull(),
+		providerConfigId: text("provider_config_id"),
+		providerType: text("provider_type"),
+		capabilityTier: text("capability_tier"),
 		piSessionFile: text("pi_session_file"),
 		createdAt: text("created_at").notNull(),
 		updatedAt: text("updated_at").notNull(),
@@ -88,5 +91,33 @@ export const loginSessionsTable = pgTable(
 	},
 	(table) => ({
 		userLookupIdx: index("managed_agent_login_sessions_user_lookup_idx").on(table.userId, table.expiresAt),
+	}),
+);
+
+export const llmProviderConfigsTable = pgTable(
+	"managed_agent_llm_provider_configs",
+	{
+		providerConfigId: text("provider_config_id").primaryKey(),
+		userId: text("user_id").notNull(),
+		providerType: text("provider_type").notNull(),
+		displayName: text("display_name").notNull(),
+		authMode: text("auth_mode").notNull(),
+		encryptedSecret: text("encrypted_secret"),
+		baseUrl: text("base_url"),
+		apiType: text("api_type"),
+		headersJson: text("headers_json"),
+		providerOptionsJson: text("provider_options_json"),
+		availableModelsJson: text("available_models_json").notNull(),
+		defaultModelId: text("default_model_id").notNull(),
+		fastModelId: text("fast_model_id"),
+		balancedModelId: text("balanced_model_id"),
+		strongModelId: text("strong_model_id"),
+		defaultThinkingLevel: text("default_thinking_level").notNull(),
+		enabled: boolean("enabled").notNull().default(true),
+		createdAt: text("created_at").notNull(),
+		updatedAt: text("updated_at").notNull(),
+	},
+	(table) => ({
+		userLookupIdx: index("managed_agent_llm_provider_configs_user_lookup_idx").on(table.userId, table.updatedAt),
 	}),
 );

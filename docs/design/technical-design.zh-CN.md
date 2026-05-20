@@ -7,6 +7,7 @@
   - [../proposals/02-session-observability-feature-proposal.zh-CN.md](../proposals/02-session-observability-feature-proposal.zh-CN.md)
   - [../proposals/03-auth-foundation-feature-proposal.zh-CN.md](../proposals/03-auth-foundation-feature-proposal.zh-CN.md)
   - [../proposals/04-multi-tenant-feature-proposal.zh-CN.md](../proposals/04-multi-tenant-feature-proposal.zh-CN.md)
+  - [../proposals/05-llm-provider-registry-feature-proposal.zh-CN.md](../proposals/05-llm-provider-registry-feature-proposal.zh-CN.md)
 - `Related Interfaces`:
   - [../interfaces/api-interface-draft.zh-CN.md](../interfaces/api-interface-draft.zh-CN.md)
   - [../interfaces/workspace-service-backend-project-storage-design.zh-CN.md](../interfaces/workspace-service-backend-project-storage-design.zh-CN.md)
@@ -61,6 +62,9 @@ MVP 固定按以下 3 个独立部署单元落地：
 | `AuthorizationGuard` | 平台新增 | `Managed Agent API` |
 | `StreamResponseProxy` | 平台新增 | `Managed Agent API` |
 | `ManagedSessionService` | 平台新增 | `Managed Agent API` |
+| `LlmProviderService` | 平台新增 | `Managed Agent API` |
+| `LlmProviderCatalog` | 平台新增 | `Managed Agent API` |
+| `LlmProviderOAuthService` | 平台新增 | `Managed Agent API` |
 | `TriggerService` | 平台新增 | `Managed Agent API` |
 | `ActiveSessionRegistry` | 平台新增 | `Managed Agent API` |
 | `EventPublisher` | 平台新增 | `Managed Agent API` |
@@ -74,6 +78,8 @@ MVP 固定按以下 3 个独立部署单元落地：
 
 - `Managed Agent API` 同时承载协议/渠道层和控制平面层
 - session durable state 仍归 `pi` session 与外部持久化对象承载，而不是该服务本地内存
+- 用户级 LLM provider registry 也归 `Managed Agent API` 承担；worker/harness 只消费已经解析好的运行时 provider config
+- OAuth 型 provider 的浏览器授权编排也归 `Managed Agent API` 承担；worker/harness 不负责第三方授权交互
 
 ## Nginx / Ingress 与 Managed Agent API
 
@@ -118,6 +124,7 @@ MVP 固定按以下 3 个独立部署单元落地：
 Control Plane Layer 负责：
 
 - `ManagedSessionService`
+- `LlmProviderService`
 - `TriggerService`
 - `ActiveSessionRegistry`
 - `EventPublisher`

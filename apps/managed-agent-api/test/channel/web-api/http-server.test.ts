@@ -140,6 +140,174 @@ test("http handler keeps logout idempotent for stale cookies", async () => {
 	}
 });
 
+test("http handler supports CRUD over per-user llm provider configs", async () => {
+	const harness = await createTestControlPlane();
+	const app = await harness.createApp();
+
+	try {
+		const cookie = await loginAsDefaultUser(app);
+		const providerTypesResult = await app.inject({
+			method: "GET",
+			url: "/llm-provider-types",
+		});
+		assert.equal(providerTypesResult.statusCode, 200);
+		assert.match(providerTypesResult.body, /"providerType":"deepseek"/);
+
+		const createProviderResult = await app.inject({
+			method: "POST",
+			url: "/me/llm-providers",
+			headers: {
+				...createAuthHeaders(cookie),
+				"content-type": "application/json",
+			},
+			payload: {
+				providerType: "openai-compatible",
+				displayName: "Local vLLM",
+				baseUrl: "http://127.0.0.1:8000/v1",
+				availableModels: ["qwen3-coder-plus"],
+				defaultModelId: "qwen3-coder-plus",
+				balancedModelId: "qwen3-coder-plus",
+				apiKey: "local-key",
+			},
+		});
+
+		assert.equal(createProviderResult.statusCode, 200);
+		const createdProvider = createProviderResult.json() as { providerConfigId: string; displayName: string };
+		assert.equal(createdProvider.displayName, "Local vLLM");
+
+		const listProviderResult = await app.inject({
+			method: "GET",
+			url: "/me/llm-providers",
+			headers: createAuthHeaders(cookie),
+		});
+		assert.equal(listProviderResult.statusCode, 200);
+		assert.match(listProviderResult.body, /"displayName":"Local vLLM"/);
+
+		const validateResult = await app.inject({
+			method: "POST",
+			url: `/me/llm-providers/${createdProvider.providerConfigId}/validate`,
+			headers: createAuthHeaders(cookie),
+		});
+		assert.equal(validateResult.statusCode, 200);
+		assert.equal(validateResult.json().valid, true);
+
+		const updateProviderResult = await app.inject({
+			method: "PATCH",
+			url: `/me/llm-providers/${createdProvider.providerConfigId}`,
+			headers: {
+				...createAuthHeaders(cookie),
+				"content-type": "application/json",
+			},
+			payload: {
+				displayName: "Local vLLM Updated",
+			},
+		});
+		assert.equal(updateProviderResult.statusCode, 200);
+		assert.equal(updateProviderResult.json().displayName, "Local vLLM Updated");
+
+		const deleteProviderResult = await app.inject({
+			method: "DELETE",
+			url: `/me/llm-providers/${createdProvider.providerConfigId}`,
+			headers: createAuthHeaders(cookie),
+		});
+		assert.equal(deleteProviderResult.statusCode, 204);
+	} finally {
+		await app.close();
+		await harness.close();
+	}
+});
+
+test("http handler supports OAuth flow start, callback, status, and disconnect", async () => {
+	const harness = await createTestControlPlane();
+	const app = await harness.createApp();
+	const originalFetch = globalThis.fetch;
+
+	globalThis.fetch = (async () =>
+		new Response(
+			JSON.stringify({
+				access_token:
+					"eyJhbGciOiJIUzI1NiJ9.eyJodHRwczovL2FwaS5vcGVuYWkuY29tL2F1dGgiOnsiY2hhdGdwdF9hY2NvdW50X2lkIjoiYWNjdF80NTYifX0.signature",
+				refresh_token: "refresh-token",
+				expires_in: 3600,
+			}),
+			{
+				status: 200,
+				headers: {
+					"content-type": "application/json",
+				},
+			},
+		)) as typeof fetch;
+
+	try {
+		const cookie = await loginAsDefaultUser(app);
+		const createProviderResult = await app.inject({
+			method: "POST",
+			url: "/me/llm-providers",
+			headers: {
+				...createAuthHeaders(cookie),
+				"content-type": "application/json",
+			},
+			payload: {
+				providerType: "openai-codex",
+				displayName: "Codex Personal",
+				availableModels: ["gpt-5.5"],
+				defaultModelId: "gpt-5.5",
+			},
+		});
+
+		assert.equal(createProviderResult.statusCode, 200);
+		const provider = createProviderResult.json() as { providerConfigId: string; hasStoredCredential: boolean };
+		assert.equal(provider.hasStoredCredential, false);
+
+		const startFlowResult = await app.inject({
+			method: "POST",
+			url: `/me/llm-providers/${provider.providerConfigId}/oauth/start`,
+			headers: {
+				...createAuthHeaders(cookie),
+				"content-type": "application/json",
+			},
+			payload: {},
+		});
+
+		assert.equal(startFlowResult.statusCode, 200);
+		const startedFlow = startFlowResult.json() as {
+			flowId: string;
+			authUrl: string;
+			usesManagedCallback: boolean;
+		};
+		assert.equal(startedFlow.usesManagedCallback, true);
+
+		const state = new URL(startedFlow.authUrl).searchParams.get("state");
+		assert.ok(state);
+
+		const callbackResult = await app.inject({
+			method: "GET",
+			url: `/oauth/llm-provider-flows/openai-codex/callback?state=${encodeURIComponent(state)}&code=oauth-code`,
+		});
+		assert.equal(callbackResult.statusCode, 200);
+
+		const flowStatusResult = await app.inject({
+			method: "GET",
+			url: `/me/llm-providers/${provider.providerConfigId}/oauth/flows/${startedFlow.flowId}`,
+			headers: createAuthHeaders(cookie),
+		});
+		assert.equal(flowStatusResult.statusCode, 200);
+		assert.equal(flowStatusResult.json().status, "completed");
+
+		const disconnectResult = await app.inject({
+			method: "DELETE",
+			url: `/me/llm-providers/${provider.providerConfigId}/oauth-account`,
+			headers: createAuthHeaders(cookie),
+		});
+		assert.equal(disconnectResult.statusCode, 200);
+		assert.equal(disconnectResult.json().hasStoredCredential, false);
+	} finally {
+		globalThis.fetch = originalFetch;
+		await app.close();
+		await harness.close();
+	}
+});
+
 test("http handler supports creating a session and appending a message", async () => {
 	const harness = await createTestControlPlane();
 	const app = await harness.createApp();
@@ -154,7 +322,7 @@ test("http handler supports creating a session and appending a message", async (
 				"content-type": "application/json",
 			},
 			payload: {
-				model: "managed-agent-local",
+				providerConfigId: harness.defaultProviderConfig.providerConfigId,
 				thinkingLevel: "medium",
 				input: {
 					content: [{ type: "text", text: "第一次输入" }],
@@ -222,7 +390,7 @@ test("http handler answers CORS preflight requests for the standalone web-ui", a
 		assert.equal(preflightResult.statusCode, 204);
 		assert.equal(preflightResult.headers["access-control-allow-origin"], TEST_ORIGIN);
 		assert.equal(preflightResult.headers["access-control-allow-credentials"], "true");
-		assert.equal(preflightResult.headers["access-control-allow-methods"], "GET,POST,PATCH,DELETE,OPTIONS");
+		assert.equal(preflightResult.headers["access-control-allow-methods"], "GET, POST, PATCH, DELETE, OPTIONS");
 	} finally {
 		await app.close();
 		await harness.close();
@@ -249,7 +417,7 @@ test("http handler returns SSE failure events when worker execution fails", asyn
 				"content-type": "application/json",
 			},
 			payload: {
-				model: "managed-agent-local",
+				providerConfigId: harness.defaultProviderConfig.providerConfigId,
 				thinkingLevel: "medium",
 				input: {
 					content: [{ type: "text", text: "触发失败" }],
@@ -325,7 +493,7 @@ test("http handler persists the full assistant transcript after chunked SSE outp
 				"content-type": "application/json",
 			},
 			payload: {
-				model: "managed-agent-local",
+				providerConfigId: harness.defaultProviderConfig.providerConfigId,
 				thinkingLevel: "medium",
 				input: {
 					content: [{ type: "text", text: "介绍下你自己。" }],
@@ -428,6 +596,7 @@ test("http handler supports renaming a session", async () => {
 				"content-type": "application/json",
 			},
 			payload: {
+				providerConfigId: harness.defaultProviderConfig.providerConfigId,
 				input: {
 					content: [{ type: "text", text: "初始标题" }],
 				},
@@ -472,6 +641,7 @@ test("http handler returns 400 when rename payload is invalid", async () => {
 				"content-type": "application/json",
 			},
 			payload: {
+				providerConfigId: harness.defaultProviderConfig.providerConfigId,
 				input: {
 					content: [{ type: "text", text: "待重命名会话" }],
 				},
@@ -515,6 +685,7 @@ test("http handler soft-deletes archived sessions from detail and list views", a
 				"content-type": "application/json",
 			},
 			payload: {
+				providerConfigId: harness.defaultProviderConfig.providerConfigId,
 				input: {
 					content: [{ type: "text", text: "待归档会话" }],
 				},
@@ -611,6 +782,7 @@ test("http handler paginates recent sessions with nextCursor and hasMore", async
 					"content-type": "application/json",
 				},
 				payload: {
+					providerConfigId: harness.defaultProviderConfig.providerConfigId,
 					input: {
 						content: [{ type: "text", text: title }],
 					},
