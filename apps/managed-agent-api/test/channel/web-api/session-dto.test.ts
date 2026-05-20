@@ -13,25 +13,28 @@ import {
 
 test("parseCreateSessionRequestDto accepts the minimal supported input", () => {
   const dto = parseCreateSessionRequestDto({
-    model: "openai/gpt-5",
+    providerConfigId: "provider_1",
+    capabilityTier: "strong",
     thinkingLevel: "medium",
     input: {
       content: [{ type: "text", text: "分析项目结构" }],
     },
   })
 
-  assert.equal(dto.model, "openai/gpt-5")
+  assert.equal(dto.providerConfigId, "provider_1")
+  assert.equal(dto.capabilityTier, "strong")
   assert.equal(dto.thinkingLevel, "medium")
   assert.equal(dto.input.content[0]?.type, "text")
 })
 
 test("parseCreateSessionRequestDto rejects empty content", () => {
-  assert.throws(() => {
-    parseCreateSessionRequestDto({
-      input: {
-        content: [],
-      },
-    })
+	assert.throws(() => {
+		parseCreateSessionRequestDto({
+			providerConfigId: "provider_1",
+			input: {
+				content: [],
+			},
+		})
   }, /input\.content is required/)
 })
 

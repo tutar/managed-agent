@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import type { SessionRunCompletion, SessionRunEvent, SessionRunJob } from "@managed-agent/contracts";
 import type { CreateMessageRequestDto, CreateSessionRequestDto } from "../../channel/web-api/dto/session-dto.js";
 import { ConflictError, NotFoundError } from "../../channel/web-api/errors/http-errors.js";
+import type { LlmProviderConfigRecord } from "../llm-provider/repositories/llm-provider-repository.js";
 import {
 	createAssistantEntry,
 	createProcessEntry,
@@ -63,16 +64,6 @@ type RunCancellationState = {
 const getFirstUserText = (input: CreateSessionRequestDto["input"]) => {
 	const firstText = input.content.find((item) => item.type === "text");
 	return firstText?.text ?? "New Session";
-};
-
-const resolveRequestedModel = (model: string | undefined) => {
-	const configuredDefaultModel = process.env.MANAGED_AGENT_DEFAULT_MODEL ?? "managed-agent-local";
-
-	if (!model || model === "managed-agent-local") {
-		return configuredDefaultModel;
-	}
-
-	return model;
 };
 
 const getLastEntryId = (entries: SessionRecord["entries"]) => {
@@ -221,12 +212,28 @@ export const createManagedSessionService = ({
 	auditService,
 	eventPublisher,
 	workerGateway,
+	llmProviderService,
 }: {
 	sessionRepository: SessionRepository;
 	activeSessionRegistry: ActiveSessionRegistry;
 	auditService: AuditService;
 	eventPublisher: EventPublisher;
 	workerGateway: HarnessWorkerGateway;
+	llmProviderService: {
+		resolveProviderSelectionForSession(input: {
+			userId: string;
+			providerConfigId: string;
+			modelId?: string;
+			capabilityTier?: "fast" | "balanced" | "strong";
+		}): Promise<{
+			record: LlmProviderConfigRecord;
+			runtimeConfig: SessionRunJob["llmProvider"];
+			resolvedModelSelection: {
+				modelId: string;
+				capabilityTier?: "fast" | "balanced" | "strong";
+			};
+		}>;
+	};
 }) => {
 	return {
 		/**
@@ -242,14 +249,23 @@ export const createManagedSessionService = ({
 			const userEntry = createUserEntry(request.input, null, now);
 			const processEntry = createProcessEntry(userEntry.id, [], now);
 			const assistantEntryId = createAssistantEntry(processEntry.id, "pending", undefined, now).id;
+			const providerSelection = await llmProviderService.resolveProviderSelectionForSession({
+				userId,
+				providerConfigId: request.providerConfigId,
+				modelId: request.modelId,
+				capabilityTier: request.capabilityTier,
+			});
 
 			const session: SessionRecord = {
 				sessionId,
 				userId,
 				sessionName,
 				status: "running",
-				model: resolveRequestedModel(request.model),
-				thinkingLevel: request.thinkingLevel ?? "medium",
+				model: `${providerSelection.runtimeConfig?.runtimeProviderId}/${providerSelection.resolvedModelSelection.modelId}`,
+				thinkingLevel: request.thinkingLevel ?? providerSelection.record.defaultThinkingLevel,
+				providerConfigId: providerSelection.record.providerConfigId,
+				providerType: providerSelection.record.providerType,
+				capabilityTier: providerSelection.resolvedModelSelection.capabilityTier,
 				createdAt: now,
 				updatedAt: now,
 				entries: [userEntry],
@@ -308,7 +324,11 @@ export const createManagedSessionService = ({
 						sessionId,
 						model: session.model,
 						thinkingLevel: session.thinkingLevel,
+						providerConfigId: session.providerConfigId,
+						providerType: session.providerType,
+						capabilityTier: session.capabilityTier,
 						input: request.input,
+						llmProvider: providerSelection.runtimeConfig,
 						userEntry,
 						processEntryId: processEntry.id,
 						finalEntryId: assistantEntryId,
@@ -415,6 +435,14 @@ export const createManagedSessionService = ({
 			const userEntry = createUserEntry(request.input, getLastEntryId(session.entries), new Date().toISOString());
 			const processEntry = createProcessEntry(userEntry.id);
 			const assistantEntryId = createAssistantEntry(processEntry.id, "pending").id;
+			const providerSelection = session.providerConfigId
+				? await llmProviderService.resolveProviderSelectionForSession({
+						userId: session.userId,
+						providerConfigId: session.providerConfigId,
+						modelId: session.model.includes("/") ? session.model.split("/").slice(1).join("/") : session.model,
+						capabilityTier: session.capabilityTier,
+					})
+				: null;
 
 			const pendingSession: SessionRecord = {
 				...session,
@@ -469,8 +497,12 @@ export const createManagedSessionService = ({
 						sessionId,
 						model: session.model,
 						thinkingLevel: session.thinkingLevel,
+						providerConfigId: session.providerConfigId,
+						providerType: session.providerType,
+						capabilityTier: session.capabilityTier,
 						piSessionFile: session.piSessionFile,
 						input: request.input,
+						llmProvider: providerSelection?.runtimeConfig,
 						userEntry,
 						processEntryId: processEntry.id,
 						finalEntryId: assistantEntryId,

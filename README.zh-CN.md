@@ -42,11 +42,14 @@ Managed Agent 不一样。Agent 在服务端运行，你通过浏览器连接—
 
 ```bash
 npm run db:up
-export DEEPSEEK_API_KEY=your-deepseek-api-key
 export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
 export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+export MANAGED_AGENT_SECRETS_KEY=managed-agent-local-dev-key
 npm run dev:all:pi
 ```
+
+启动后进入 Settings，新增一个 provider 配置（如 DeepSeek 或 OpenAI），再开始聊天。
+provider 凭据现在按用户维度落 PostgreSQL，不再通过进程环境变量直接注入。
 
 ### sandbox 模式（K8s Pod 隔离）
 
@@ -61,9 +64,9 @@ npm run dev:all:pi
 
 ```bash
 npm run db:up
-export DEEPSEEK_API_KEY=your-deepseek-api-key
 export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
 export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+export MANAGED_AGENT_SECRETS_KEY=managed-agent-local-dev-key
 npm run dev:all:sandbox
 ```
 
@@ -73,6 +76,7 @@ npm run dev:all:sandbox
 npm run db:up
 export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
 export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+export MANAGED_AGENT_SECRETS_KEY=managed-agent-local-dev-key
 npm run dev:all
 ```
 
@@ -108,6 +112,7 @@ npm run reset:local-state
 - transcript 持久化：sandbox JSONL 磁盘缓存 + 刷新恢复
 - rename、archive、分页和明确的 SSE 生命周期
 - 用户注册、登录、登出、会话认证
+- Settings 下的用户级 LLM provider registry，落 PostgreSQL，并参与 chat/runtime 选择
 
 当前还没覆盖：
 
@@ -116,6 +121,7 @@ npm run reset:local-state
 - 完整 trigger 调度和外部事件恢复
 - 多租户、预算与策略控制
 - NetworkPolicy + HTTP Proxy sandbox 安全策略
+- OpenAI Codex、GitHub Copilot 等 provider 的一等 OAuth 浏览器流程
 
 ## 继续阅读
 

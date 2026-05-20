@@ -2,7 +2,14 @@ import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import type { PgliteDatabase } from "drizzle-orm/pglite";
 import { Pool } from "pg";
 
-import { auditRecordsTable, loginSessionsTable, sessionsTable, userSessionsTable, usersTable } from "./schema.js";
+import {
+	auditRecordsTable,
+	llmProviderConfigsTable,
+	loginSessionsTable,
+	sessionsTable,
+	userSessionsTable,
+	usersTable,
+} from "./schema.js";
 
 export const managedAgentDatabaseSchema = {
 	sessionsTable,
@@ -10,6 +17,7 @@ export const managedAgentDatabaseSchema = {
 	auditRecordsTable,
 	usersTable,
 	loginSessionsTable,
+	llmProviderConfigsTable,
 };
 
 export type ManagedAgentDatabase =
@@ -24,6 +32,9 @@ export const bootstrapManagedAgentDatabaseStatements = [
     status text not null,
     model text not null,
     thinking_level text not null,
+    provider_config_id text,
+    provider_type text,
+    capability_tier text,
     pi_session_file text,
     created_at text not null,
     updated_at text not null,
@@ -69,6 +80,32 @@ export const bootstrapManagedAgentDatabaseStatements = [
   )`,
 	`create index if not exists managed_agent_login_sessions_user_lookup_idx
     on managed_agent_login_sessions (user_id, expires_at)`,
+	`create table if not exists managed_agent_llm_provider_configs (
+    provider_config_id text primary key,
+    user_id text not null,
+    provider_type text not null,
+    display_name text not null,
+    auth_mode text not null,
+    encrypted_secret text,
+    base_url text,
+    api_type text,
+    headers_json text,
+    provider_options_json text,
+    available_models_json text not null,
+    default_model_id text not null,
+    fast_model_id text,
+    balanced_model_id text,
+    strong_model_id text,
+    default_thinking_level text not null,
+    enabled boolean not null default true,
+    created_at text not null,
+    updated_at text not null
+  )`,
+	`create index if not exists managed_agent_llm_provider_configs_user_lookup_idx
+    on managed_agent_llm_provider_configs (user_id, updated_at)`,
+	`alter table managed_agent_sessions add column if not exists provider_config_id text`,
+	`alter table managed_agent_sessions add column if not exists provider_type text`,
+	`alter table managed_agent_sessions add column if not exists capability_tier text`,
 ];
 
 type BootstrapClient = {

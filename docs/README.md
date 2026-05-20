@@ -28,6 +28,7 @@ docs/
 | [proposals/02-session-observability-feature-proposal.zh-CN.md](./proposals/02-session-observability-feature-proposal.zh-CN.md) | 为什么 session observability 要单独立项，且不应塞进 session 本体 | 设计观测、运营、统计视图时 |
 | [proposals/03-auth-foundation-feature-proposal.zh-CN.md](./proposals/03-auth-foundation-feature-proposal.zh-CN.md) | 为什么注册/登录必须先于多租户，以及当前阶段最小身份能力边界 | 设计真实用户身份和登录态时 |
 | [proposals/04-multi-tenant-feature-proposal.zh-CN.md](./proposals/04-multi-tenant-feature-proposal.zh-CN.md) | 多租户为什么单独立项，以及哪些对象和策略要补 `tenantId` | 设计租户隔离和企业级扩展时 |
+| [proposals/05-llm-provider-registry-feature-proposal.zh-CN.md](./proposals/05-llm-provider-registry-feature-proposal.zh-CN.md) | 为什么 provider 配置必须从 env/localStorage 收敛到数据库与 Settings | 设计模型提供商管理、模型切换和未来 LLM 场景复用时 |
 
 ## Architecture & Technical Design
 
@@ -36,6 +37,7 @@ docs/
 | [design/minimal-architecture.zh-CN.md](./design/minimal-architecture.zh-CN.md) | 当前 MVP 的服务分层、运行约束、存储边界和实现顺序 | 需要先看整体架构总览时 |
 | [design/technical-design.zh-CN.md](./design/technical-design.zh-CN.md) | 运行时对象、生命周期、worker/harness/sandbox 协作方式 | 进入实现细节或需要收敛边界时 |
 | [design/auth-design.zh-CN.md](./design/auth-design.zh-CN.md) | 注册/登录、`login session` 与 `agent session` 的技术边界和接入方式 | 开始设计 auth 落地方案时 |
+| [design/llm-provider-registry-design.zh-CN.md](./design/llm-provider-registry-design.zh-CN.md) | 用户级 provider registry、secret 加密、能力档位和 `pi-ai` 运行时边界 | 开始落地 Settings 驱动的 provider 配置和模型选择时 |
 
 ## API & Storage
 
@@ -66,9 +68,11 @@ docs/
 2. `proposals/02-session-observability-feature-proposal.zh-CN.md`
 3. `proposals/03-auth-foundation-feature-proposal.zh-CN.md`
 4. `proposals/04-multi-tenant-feature-proposal.zh-CN.md`
-5. `design/minimal-architecture.zh-CN.md`
-6. `design/technical-design.zh-CN.md`
-7. `design/auth-design.zh-CN.md`
-8. `interfaces/api-interface-draft.zh-CN.md`
-9. `interfaces/workspace-service-backend-project-storage-design.zh-CN.md`
-10. `status/implementation-status.md`
+5. `proposals/05-llm-provider-registry-feature-proposal.zh-CN.md`
+6. `design/minimal-architecture.zh-CN.md`
+7. `design/technical-design.zh-CN.md`
+8. `design/auth-design.zh-CN.md`
+9. `design/llm-provider-registry-design.zh-CN.md`
+10. `interfaces/api-interface-draft.zh-CN.md`
+11. `interfaces/workspace-service-backend-project-storage-design.zh-CN.md`
+12. `status/implementation-status.md`

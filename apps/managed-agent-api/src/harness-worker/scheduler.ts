@@ -70,7 +70,6 @@ export const createSandboxPodSpec = ({
 					image: sandboxImage,
 					imagePullPolicy: "IfNotPresent",
 					command: ["node", "/agent/dist/entrypoint.js"],
-					env: [{ name: "DEEPSEEK_API_KEY", value: process.env.DEEPSEEK_API_KEY ?? "" }],
 					volumeMounts: [
 						{ name: "job-input", mountPath: "/job", readOnly: true },
 						{ name: "persistent-storage", mountPath: "/mnt/transcripts", subPath: "transcripts" },

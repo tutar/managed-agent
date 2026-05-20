@@ -19,22 +19,24 @@ import { writeManagedTranscriptFixture } from "../../test-support/managed-transc
 
 test("managed session service creates a session and updates projections", async () => {
   const harness = await createTestControlPlane()
+  const userId = harness.developmentUser.userId
 
   try {
     await harness.managedSessionService.createSession({
       request: parseCreateSessionRequestDto({
+        providerConfigId: harness.defaultProviderConfig.providerConfigId,
         input: {
           content: [{ type: "text", text: "分析当前项目结构" }],
         },
       }),
-      userId: "demo-user",
+      userId,
       includeProcess: true,
       includeFinal: true,
       response: createResponseStub(),
     })
 
     const sessionsPage = await harness.managedSessionService.listUserSessions(
-      "demo-user",
+      userId,
     )
     assert.equal(sessionsPage.items.length, 1)
     assert.equal(sessionsPage.items[0]?.sessionName, "分析当前项目结构")
@@ -60,22 +62,24 @@ test("managed session service creates a session and updates projections", async 
 
 test("managed session service can continue an existing session", async () => {
   const harness = await createTestControlPlane()
+  const userId = harness.developmentUser.userId
 
   try {
     await harness.managedSessionService.createSession({
       request: parseCreateSessionRequestDto({
+        providerConfigId: harness.defaultProviderConfig.providerConfigId,
         input: {
           content: [{ type: "text", text: "第一次输入" }],
         },
       }),
-      userId: "demo-user",
+      userId,
       includeProcess: true,
       includeFinal: true,
       response: createResponseStub(),
     })
 
     const sessionId = (
-      await harness.managedSessionService.listUserSessions("demo-user")
+      await harness.managedSessionService.listUserSessions(userId)
     ).items[0]!.sessionId
 
     await harness.managedSessionService.submitMessage({
@@ -168,22 +172,24 @@ test("managed session service persists and reuses piSessionFile across prompts",
       } satisfies SessionExecutor
     },
   })
+  const userId = harness.developmentUser.userId
 
   try {
     await harness.managedSessionService.createSession({
       request: parseCreateSessionRequestDto({
+        providerConfigId: harness.defaultProviderConfig.providerConfigId,
         input: {
           content: [{ type: "text", text: "第一次输入" }],
         },
       }),
-      userId: "demo-user",
+      userId,
       includeProcess: true,
       includeFinal: true,
       response: createResponseStub(),
     })
 
     const sessionId = (
-      await harness.managedSessionService.listUserSessions("demo-user")
+      await harness.managedSessionService.listUserSessions(userId)
     ).items[0]!.sessionId
     const createdSession = await harness.managedSessionService.getSession(sessionId)
 
@@ -258,22 +264,24 @@ test("managed session service stores the full assistant transcript from streamed
         ],
       }),
   })
+  const userId = harness.developmentUser.userId
 
   try {
     await harness.managedSessionService.createSession({
       request: parseCreateSessionRequestDto({
+        providerConfigId: harness.defaultProviderConfig.providerConfigId,
         input: {
           content: [{ type: "text", text: "介绍下你自己。" }],
         },
       }),
-      userId: "demo-user",
+      userId,
       includeProcess: true,
       includeFinal: true,
       response: createResponseStub(),
     })
 
     const sessionId = (
-      await harness.managedSessionService.listUserSessions("demo-user")
+      await harness.managedSessionService.listUserSessions(userId)
     ).items[0]!.sessionId
     const session = await harness.managedSessionService.getSession(sessionId)
     const assistantContent = session?.entries.at(-1)?.content[0]
@@ -296,22 +304,24 @@ test("managed session service records worker failures into audit and error statu
       },
     },
   })
+  const userId = harness.developmentUser.userId
 
   try {
     await harness.managedSessionService.createSession({
       request: parseCreateSessionRequestDto({
+        providerConfigId: harness.defaultProviderConfig.providerConfigId,
         input: {
           content: [{ type: "text", text: "触发失败" }],
         },
       }),
-      userId: "demo-user",
+      userId,
       includeProcess: true,
       includeFinal: true,
       response: createResponseStub(),
     })
 
     const sessionId = (
-      await harness.managedSessionService.listUserSessions("demo-user")
+      await harness.managedSessionService.listUserSessions(userId)
     ).items[0]!.sessionId
     const session = await harness.managedSessionService.getSession(sessionId)
 
@@ -344,21 +354,23 @@ test("managed session service treats streamed run.failed events as execution fai
       },
     },
   })
+  const userId = harness.developmentUser.userId
 
   try {
     await harness.managedSessionService.createSession({
       request: parseCreateSessionRequestDto({
+        providerConfigId: harness.defaultProviderConfig.providerConfigId,
         input: {
           content: [{ type: "text", text: "触发 sandbox 失败" }],
         },
       }),
-      userId: "demo-user",
+      userId,
       includeProcess: true,
       includeFinal: true,
       response: createResponseStub(),
     })
 
-    const sessionId = (await harness.managedSessionService.listUserSessions("demo-user")).items[0]!.sessionId
+    const sessionId = (await harness.managedSessionService.listUserSessions(userId)).items[0]!.sessionId
     const session = await harness.managedSessionService.getSession(sessionId)
 
     assert.equal(session?.status, "error")
@@ -397,15 +409,17 @@ test("managed session service emits run.cancelled and closes the run as idle", a
       },
     },
   })
+  const userId = harness.developmentUser.userId
 
   try {
     const createPromise = harness.managedSessionService.createSession({
       request: parseCreateSessionRequestDto({
+        providerConfigId: harness.defaultProviderConfig.providerConfigId,
         input: {
           content: [{ type: "text", text: "请取消当前执行" }],
         },
       }),
-      userId: "demo-user",
+      userId,
       includeProcess: true,
       includeFinal: true,
       response: createResponseStub(),
@@ -414,7 +428,7 @@ test("managed session service emits run.cancelled and closes the run as idle", a
     await new Promise((resolve) => setTimeout(resolve, 5))
 
     const sessionId = (
-      await harness.managedSessionService.listUserSessions("demo-user")
+      await harness.managedSessionService.listUserSessions(userId)
     ).items[0]!.sessionId
     assert.equal(await harness.managedSessionService.cancelSession(sessionId), true)
 
@@ -462,22 +476,24 @@ test("managed session service persists failed tool calls in the process transcri
         ],
       }),
   })
+  const userId = harness.developmentUser.userId
 
   try {
     await harness.managedSessionService.createSession({
       request: parseCreateSessionRequestDto({
+        providerConfigId: harness.defaultProviderConfig.providerConfigId,
         input: {
           content: [{ type: "text", text: "模拟失败工具调用" }],
         },
       }),
-      userId: "demo-user",
+      userId,
       includeProcess: true,
       includeFinal: true,
       response: createResponseStub(),
     })
 
     const sessionId = (
-      await harness.managedSessionService.listUserSessions("demo-user")
+      await harness.managedSessionService.listUserSessions(userId)
     ).items[0]!.sessionId
     const processEntry = (await harness.managedSessionService.getSession(sessionId))
       ?.entries[1]

@@ -8,6 +8,7 @@
 
 - 暴露 `web-ui` 使用的 JSON/SSE API
 - 维护 login session 与当前认证用户上下文
+- 管理用户级 LLM provider registry，并把 provider config 解析为运行时模型配置
 - 编排 agent session 的创建、续写、取消、归档
 - 读写 durable metadata / projection / audit
 - 读取 durable transcript 文件并组装 `/sessions/{id}` 响应
@@ -30,16 +31,19 @@ src/
     web-api/
       dto/
         auth-dto.ts
+        llm-provider-dto.ts
         session-dto.ts
       errors/
         http-errors.ts
       routes/
         auth-routes.ts
         health-routes.ts
+        llm-provider-routes.ts
         session-routes.ts
         trigger-routes.ts
       schemas/
         auth-schema.ts
+        llm-provider-schema.ts
         session-schema.ts
       sse/
         stream-response-proxy.ts
@@ -60,6 +64,12 @@ src/
       repositories/
         audit-repository.ts
         postgres-audit-repository.ts
+    llm-provider/
+      llm-provider-catalog.ts
+      llm-provider-service.ts
+      repositories/
+        llm-provider-repository.ts
+        postgres-llm-provider-repository.ts
     session/
       active-session-registry.ts
       entry-factory.ts
@@ -81,8 +91,15 @@ src/
       postgres/
         database.ts
         schema.ts
+    security/
+      secrets-crypto.ts
     storage/
       mount-paths.ts
+  harness-worker/
+    pi-executor.ts
+    runtime-selector.ts
+    sandbox-executor.ts
+    scheduler.ts
 ```
 
 ## Placement Rules
@@ -111,9 +128,11 @@ src/
 当前默认行为：
 
 - session metadata / recent-session projection / audit 走 PostgreSQL durable store
+- provider registry 和加密后的 provider secret 也走 PostgreSQL durable store
 - transcript 通过 `piSessionFile` 从 `${MANAGED_AGENT_MOUNT_ROOT}/transcripts` 读取
 - 运行时 transcript 只能落在 `${MANAGED_AGENT_MOUNT_ROOT}/transcripts`
   下；服务目录中的 `transcripts/` 仅允许作为历史残留被清理，不应再被新代码写入
+- provider secret 通过 `MANAGED_AGENT_SECRETS_KEY` 做应用层加密后再持久化
 - worker 默认使用 mock runtime
 - 设置 `MANAGED_AGENT_RUNTIME=pi` 时切到 `pi` runtime
 - `web-ui` 通过 cookie auth + JSON/SSE 访问本服务

@@ -8,6 +8,7 @@ import {
 	ModelRegistry,
 	SessionManager,
 } from "@earendil-works/pi-coding-agent";
+import type { LlmProviderRuntimeConfig } from "@managed-agent/contracts";
 
 /**
  * Harness-native event — no platform concepts (sessionId, entryId).
@@ -38,9 +39,89 @@ export type HarnessInput = {
 	piSessionFile?: string;
 	cwd?: string;
 	sessionDir?: string;
+	llmProvider?: LlmProviderRuntimeConfig;
 };
 
 export type HarnessResult = { piSessionFile?: string };
+
+const createCompatibleModelDefinition = (provider: LlmProviderRuntimeConfig) => {
+	const availableModels =
+		provider.availableModels && provider.availableModels.length > 0
+			? provider.availableModels
+			: [
+					{
+						modelId: provider.modelId,
+						displayName: provider.modelId,
+						supportsReasoning: provider.supportsReasoning,
+					},
+				];
+
+	return availableModels.map((modelDefinition) => ({
+		id: modelDefinition.modelId,
+		name: modelDefinition.displayName,
+		reasoning: modelDefinition.supportsReasoning,
+		input: ["text", "image"] as ("text" | "image")[],
+		cost: {
+			input: 0,
+			output: 0,
+			cacheRead: 0,
+			cacheWrite: 0,
+		},
+		contextWindow: 256_000,
+		maxTokens: 32_768,
+	}));
+};
+
+/**
+ * Apply one resolved provider runtime config to the in-memory `pi-ai` auth and
+ * model registries so the harness no longer depends on provider env vars.
+ */
+const applyRuntimeProviderConfig = ({
+	authStorage,
+	modelRegistry,
+	llmProvider,
+}: {
+	authStorage: AuthStorage;
+	modelRegistry: ModelRegistry;
+	llmProvider: LlmProviderRuntimeConfig;
+}) => {
+	if (llmProvider.authMode === "api_key" && llmProvider.apiKey) {
+		authStorage.set(llmProvider.runtimeProviderId, {
+			type: "api_key",
+			key: llmProvider.apiKey,
+		});
+	}
+
+	if (llmProvider.authMode === "oauth" && llmProvider.oauthCredential) {
+		authStorage.set(llmProvider.runtimeProviderId, {
+			type: "oauth",
+			access: llmProvider.oauthCredential.access,
+			refresh: llmProvider.oauthCredential.refresh,
+			expires: llmProvider.oauthCredential.expires,
+		});
+	}
+
+	if (
+		llmProvider.usesBuiltInProvider &&
+		!llmProvider.baseUrl &&
+		(!llmProvider.headers || Object.keys(llmProvider.headers).length === 0)
+	) {
+		return;
+	}
+
+	modelRegistry.registerProvider(llmProvider.runtimeProviderId, {
+		name: llmProvider.displayName,
+		baseUrl: llmProvider.baseUrl,
+		api: llmProvider.apiType,
+		headers: llmProvider.headers,
+		authHeader: llmProvider.authHeader,
+		...(llmProvider.usesBuiltInProvider
+			? {}
+			: {
+					models: createCompatibleModelDefinition(llmProvider),
+				}),
+	});
+};
 
 export async function* runHarness(input: HarnessInput): AsyncGenerator<HarnessEvent, HarnessResult> {
 	const cwd = input.cwd ?? process.cwd();
@@ -48,8 +129,16 @@ export async function* runHarness(input: HarnessInput): AsyncGenerator<HarnessEv
 	await mkdir(sessionDir, { recursive: true });
 	const sessionRoot = dirname(sessionDir);
 
-	const authStorage = AuthStorage.create();
-	const modelRegistry = ModelRegistry.create(authStorage);
+	const authStorage = input.llmProvider ? AuthStorage.inMemory() : AuthStorage.create();
+	const modelRegistry = input.llmProvider ? ModelRegistry.inMemory(authStorage) : ModelRegistry.create(authStorage);
+
+	if (input.llmProvider) {
+		applyRuntimeProviderConfig({
+			authStorage,
+			modelRegistry,
+			llmProvider: input.llmProvider,
+		});
+	}
 
 	const [provider, ...rest] = input.model.split("/");
 	const modelId = rest.join("/");

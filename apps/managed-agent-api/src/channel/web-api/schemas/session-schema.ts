@@ -25,7 +25,9 @@ const CreateSessionInputSchema = Type.Object({
 });
 
 export const CreateSessionRequestSchema = Type.Object({
-	model: Type.Optional(Type.String({ minLength: 1 })),
+	providerConfigId: Type.String({ minLength: 1 }),
+	modelId: Type.Optional(Type.String({ minLength: 1 })),
+	capabilityTier: Type.Optional(Type.Union([Type.Literal("fast"), Type.Literal("balanced"), Type.Literal("strong")])),
 	thinkingLevel: Type.Optional(Type.String({ minLength: 1 })),
 	input: CreateSessionInputSchema,
 });

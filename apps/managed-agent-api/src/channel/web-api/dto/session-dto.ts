@@ -21,7 +21,9 @@ import type {
  * map already-validated transport data into service-facing DTOs.
  */
 export type CreateSessionRequestDto = {
-	model?: string;
+	providerConfigId: string;
+	modelId?: string;
+	capabilityTier?: "fast" | "balanced" | "strong";
 	thinkingLevel?: string;
 	input: {
 		content: InputContentItem[];
@@ -61,6 +63,9 @@ export type SessionDetailResponseDto = {
 	status: SessionStatus;
 	model: string;
 	thinkingLevel: string;
+	providerConfigId?: string;
+	providerType?: string;
+	capabilityTier?: "fast" | "balanced" | "strong";
 	createdAt: string;
 	lastActiveAt: string;
 	entries: SessionResponseEntryDto[];
@@ -108,7 +113,9 @@ const trimOptionalString = (value?: string) => {
 /** Normalize a validated create-session body into the service DTO. */
 export const toCreateSessionRequestDto = (body: CreateSessionRequestSchemaDto): CreateSessionRequestDto => {
 	return {
-		model: trimOptionalString(body.model),
+		providerConfigId: body.providerConfigId.trim(),
+		modelId: trimOptionalString(body.modelId),
+		capabilityTier: body.capabilityTier,
 		thinkingLevel: trimOptionalString(body.thinkingLevel),
 		input: {
 			content: body.input.content as InputContentItem[],
@@ -125,18 +132,29 @@ export const parseCreateSessionRequestDto = (body: unknown): CreateSessionReques
 		throw new ValidationError("input.content is required");
 	}
 
-	const { input, model, thinkingLevel } = body as {
+	const { input, providerConfigId, modelId, capabilityTier, thinkingLevel } = body as {
 		input?: { content?: unknown[] };
-		model?: unknown;
+		providerConfigId?: unknown;
+		modelId?: unknown;
+		capabilityTier?: unknown;
 		thinkingLevel?: unknown;
 	};
+
+	if (typeof providerConfigId !== "string" || providerConfigId.trim().length === 0) {
+		throw new ValidationError("providerConfigId is required");
+	}
 
 	if (!input || !Array.isArray(input.content) || input.content.length === 0) {
 		throw new ValidationError("input.content is required");
 	}
 
 	return {
-		model: typeof model === "string" ? trimOptionalString(model) : undefined,
+		providerConfigId: providerConfigId.trim(),
+		modelId: typeof modelId === "string" ? trimOptionalString(modelId) : undefined,
+		capabilityTier:
+			capabilityTier === "fast" || capabilityTier === "balanced" || capabilityTier === "strong"
+				? capabilityTier
+				: undefined,
 		thinkingLevel: typeof thinkingLevel === "string" ? trimOptionalString(thinkingLevel) : undefined,
 		input: {
 			content: input.content as InputContentItem[],
@@ -221,6 +239,9 @@ export const toSessionDetailResponseDto = (
 		status,
 		model: session.model,
 		thinkingLevel: session.thinkingLevel,
+		providerConfigId: session.providerConfigId,
+		providerType: session.providerType,
+		capabilityTier: session.capabilityTier,
 		createdAt: session.createdAt,
 		lastActiveAt: session.updatedAt,
 		entries: session.entries.map((entry) => ({

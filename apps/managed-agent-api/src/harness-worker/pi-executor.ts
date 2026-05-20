@@ -21,6 +21,7 @@ export const createPiSessionExecutor = ({
 				prompt: userText,
 				piSessionFile: job.piSessionFile,
 				sessionDir: join(transcriptsRoot, "pi-sessions"),
+				llmProvider: job.llmProvider,
 			});
 
 			let result = iterator.next();

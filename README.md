@@ -50,11 +50,15 @@ Full document index: [docs/README.md](./docs/README.md)
 
 ```bash
 npm run db:up
-export DEEPSEEK_API_KEY=your-deepseek-api-key
 export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
 export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+export MANAGED_AGENT_SECRETS_KEY=managed-agent-local-dev-key
 npm run dev:all:pi
 ```
+
+Then open the Settings dialog, create one provider config such as DeepSeek or
+OpenAI, and start chatting. Provider credentials are now stored per user in
+PostgreSQL instead of process environment variables.
 
 ### sandbox mode (K8s Pod isolation)
 
@@ -69,9 +73,9 @@ Then start:
 
 ```bash
 npm run db:up
-export DEEPSEEK_API_KEY=your-deepseek-api-key
 export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
 export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+export MANAGED_AGENT_SECRETS_KEY=managed-agent-local-dev-key
 npm run dev:all:sandbox
 ```
 
@@ -81,6 +85,7 @@ npm run dev:all:sandbox
 npm run db:up
 export MANAGED_AGENT_DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/managed_agent
 export MANAGED_AGENT_MOUNT_ROOT="$(pwd)/.managed-agent/mnt"
+export MANAGED_AGENT_SECRETS_KEY=managed-agent-local-dev-key
 npm run dev:all
 ```
 
@@ -116,6 +121,7 @@ Currently covered:
 - Transcript persistence: sandbox JSONL disk cache + refresh recovery
 - rename, archive, cursor pagination, and explicit SSE lifecycle
 - User registration, login, logout, session auth
+- Per-user LLM provider registry in Settings, persisted in PostgreSQL and used by chat/runtime selection
 
 Not covered yet:
 
@@ -124,6 +130,7 @@ Not covered yet:
 - full trigger scheduling and external-event recovery
 - multi-tenant controls, budgets, and policy enforcement
 - NetworkPolicy + HTTP Proxy sandbox security
+- first-class OAuth browser flows for providers such as OpenAI Codex and GitHub Copilot
 
 ## Read Next
 
