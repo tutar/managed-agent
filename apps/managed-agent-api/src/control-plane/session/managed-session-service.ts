@@ -234,6 +234,9 @@ export const createManagedSessionService = ({
 				thinkingLevel?: string;
 			};
 		}>;
+		listUserProviderConfigs?: (userId: string) => Promise<
+			Array<{ providerConfigId: string; enabled: boolean }>
+		>;
 	};
 }) => {
 	return {
@@ -436,7 +439,7 @@ export const createManagedSessionService = ({
 			const userEntry = createUserEntry(request.input, getLastEntryId(session.entries), new Date().toISOString());
 			const processEntry = createProcessEntry(userEntry.id);
 			const assistantEntryId = createAssistantEntry(processEntry.id, "pending").id;
-			const providerSelection = session.providerConfigId
+			let providerSelection = session.providerConfigId
 				? await llmProviderService.resolveProviderSelectionForSession({
 						userId: session.userId,
 						providerConfigId: session.providerConfigId,
@@ -445,6 +448,20 @@ export const createManagedSessionService = ({
 						validateThinkingLevel: false,
 					})
 				: null;
+
+			// Fall back to the first available provider for sessions created
+			// before the provider registry existed.
+			if (!providerSelection) {
+				const providers = await llmProviderService.listUserProviderConfigs?.(session.userId) ?? [];
+				const first = providers.find((p) => p.enabled);
+				if (first) {
+					providerSelection = await llmProviderService.resolveProviderSelectionForSession({
+						userId: session.userId,
+						providerConfigId: first.providerConfigId,
+						validateThinkingLevel: false,
+					});
+				}
+			}
 
 			const pendingSession: SessionRecord = {
 				...session,

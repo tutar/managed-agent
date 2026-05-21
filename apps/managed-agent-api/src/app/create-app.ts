@@ -98,6 +98,16 @@ export const createApiApp = async ({
 		logger: false,
 	});
 
+		// Allow empty JSON bodies (e.g. DELETE requests from the web UI).
+		app.addContentTypeParser(
+			"application/json",
+			{ parseAs: "string" },
+			(_req, body: string, done) => {
+				if (body.trim().length === 0) { done(null, {}); return; }
+				try { done(null, JSON.parse(body)); }
+				catch (err) { done(err as Error, undefined); }
+			},
+		);
 	await registerCorsPlugin(app);
 	await registerCookiePlugin(app);
 	registerErrorHandler(app);

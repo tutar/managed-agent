@@ -9,7 +9,9 @@ import { Scheduler } from "./scheduler.js";
  * Mirrors events to host transcript as a local-validation bridge.
  */
 export const createSandboxSessionExecutor = (): SessionExecutor => {
-	const scheduler = new Scheduler();
+	const scheduler = new Scheduler({
+		sandboxImage: process.env.MANAGED_AGENT_SANDBOX_IMAGE ?? "managed-agent-sandbox:latest",
+	});
 	const hostTranscriptsRoot = join(resolveManagedAgentMountPaths().transcriptsRoot, "pi-sessions");
 
 	return {

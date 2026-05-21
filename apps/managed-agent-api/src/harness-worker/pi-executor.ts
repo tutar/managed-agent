@@ -1,21 +1,20 @@
-import { isAbsolute, join, relative } from "node:path";
+import { join } from "node:path";
 import type { SessionExecutor, SessionRunCompletion, SessionRunEvent, SessionRunJob } from "@managed-agent/contracts";
 import type { HarnessEvent } from "@managed-agent/harness";
-import { runHarness } from "@managed-agent/harness";
+import { resolveAdapter } from "@managed-agent/harness";
 import { resolveManagedAgentMountPaths } from "../infrastructure/storage/mount-paths.js";
 
 export const createPiSessionExecutor = ({
-	runHarnessImpl = runHarness,
 	transcriptsRoot = resolveManagedAgentMountPaths().transcriptsRoot,
 }: {
-	runHarnessImpl?: typeof runHarness;
 	transcriptsRoot?: string;
 } = {}): SessionExecutor => {
 	return {
 		async *run(job: SessionRunJob): AsyncGenerator<SessionRunEvent, SessionRunCompletion> {
 			const userText = job.input.content?.map((c) => (c.type === "text" ? c.text : "")).join("") ?? "";
 
-			const iterator = runHarnessImpl({
+			const adapter = await resolveAdapter();
+			const iterator = adapter.run({
 				model: job.model,
 				thinkingLevel: job.thinkingLevel,
 				prompt: userText,
@@ -28,83 +27,26 @@ export const createPiSessionExecutor = ({
 			while (true) {
 				const next = await result;
 				if (next.done) {
-					return {
-						piSessionFile: normalizePiSessionFile(next.value?.piSessionFile, transcriptsRoot),
-					};
+					return { piSessionFile: next.value?.piSessionFile };
 				}
-				const mappedEvent = mapEvent(next.value, job);
-				if (mappedEvent) {
-					yield mappedEvent;
-				}
+				yield mapEvent(next.value, job);
 				result = iterator.next();
 			}
 		},
 	};
 };
 
-/**
- * Persist relative pi session paths so the API can reopen them against the
- * shared transcripts root regardless of the current working directory.
- */
-const normalizePiSessionFile = (piSessionFile: string | undefined, transcriptsRoot: string) => {
-	if (!piSessionFile || piSessionFile.length === 0) {
-		return undefined;
-	}
-
-	if (isAbsolute(piSessionFile)) {
-		return relative(transcriptsRoot, piSessionFile);
-	}
-
-	return piSessionFile;
-};
-
-const mapEvent = (event: HarnessEvent, job: SessionRunJob): SessionRunEvent | null => {
+const mapEvent = (event: HarnessEvent, job: SessionRunJob): SessionRunEvent => {
 	switch (event.type) {
 		case "agent_start":
-			return null;
+			return { type: "process.delta", data: { sessionId: job.sessionId, entryId: job.processEntryId, parentId: job.userEntry.id, text: "harness runtime 已接管当前请求。" } };
 		case "agent_end":
-			return {
-				type: "final.output.completed",
-				data: {
-					sessionId: job.sessionId,
-					entryId: job.finalEntryId,
-				},
-			};
+			return { type: "final.output.completed", data: { sessionId: job.sessionId, entryId: job.finalEntryId } };
 		case "text_delta":
-			return {
-				type: "final.output.delta",
-				data: {
-					sessionId: job.sessionId,
-					entryId: job.finalEntryId,
-					parentId: job.processEntryId,
-					text: event.text,
-				},
-			};
+			return { type: "final.output.delta", data: { sessionId: job.sessionId, entryId: job.finalEntryId, parentId: job.processEntryId, text: event.text } };
 		case "tool_start":
-			return {
-				type: "action.started",
-				data: {
-					sessionId: job.sessionId,
-					entryId: job.processEntryId,
-					parentId: job.userEntry.id,
-					toolCallId: event.toolCallId,
-					name: event.name,
-					arguments: event.arguments,
-				},
-			};
-		case "tool_end": {
-			const toolExecutionFailed = "isError" in event && event.isError === true;
-			return {
-				type: toolExecutionFailed ? "action.failed" : "action.completed",
-				data: {
-					sessionId: job.sessionId,
-					entryId: job.processEntryId,
-					parentId: job.userEntry.id,
-					toolCallId: event.toolCallId,
-					name: event.name,
-					...(toolExecutionFailed ? { error: event.result } : { result: event.result }),
-				},
-			};
-		}
+			return { type: "action.started", data: { sessionId: job.sessionId, entryId: job.processEntryId, parentId: job.userEntry.id, toolCallId: event.toolCallId, name: event.name, arguments: event.arguments } };
+		case "tool_end":
+			return { type: "action.completed", data: { sessionId: job.sessionId, entryId: job.processEntryId, parentId: job.userEntry.id, toolCallId: event.toolCallId, name: event.name, result: event.result } };
 	}
 };
