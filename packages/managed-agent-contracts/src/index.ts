@@ -64,6 +64,7 @@ export type LlmProviderRuntimeConfig = {
 	authMode: ProviderAuthMode;
 	apiType?: ProviderApiType;
 	baseUrl?: string;
+		anthropicBaseUrl?: string;
 	apiKey?: string;
 	headers?: Record<string, string>;
 	authHeader?: boolean;

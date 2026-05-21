@@ -79,6 +79,7 @@ user account
 - `authMode`
 - `encryptedSecret`
 - `baseUrl`
+- `anthropicBaseUrl`
 - `apiType`
 - `headersJson`
 - `providerOptionsJson`
@@ -193,6 +194,45 @@ session 创建时统一采用两层选择：
 - 如果请求显式传 `thinkingLevel`，只有在所选模型支持该 level 时才允许通过
 - 如果未传 `modelId`，则使用 provider config 的 `defaultModelId`
 - 如果未传 `thinkingLevel`，则使用 provider config 的 `defaultThinkingLevel`
+
+## 多 API 端点支持
+
+许多 provider 同时提供两种兼容接口：
+
+- **OpenAI-compatible**（通用 Chat Completions）、**Anthropic-compatible**（Claude Messages）
+- 如 DeepSeek 有两个 base URL：`https://api.deepseek.com` 和 `https://api.deepseek.com/anthropic`
+- pi adapter 走 OpenAI-compatible，Claude Code 走 Anthropic-compatible
+
+为此 provider 配置同时保存两个 URL。用户创建 provider 时系统根据 catalog 自动填充，也可手动覆盖。
+
+### Catalog 扩展
+
+```ts
+type ProviderCatalogItem = {
+  providerType: string;
+  defaultBaseUrl: string;
+  apiEndpoints?: {
+    openai?: string;       // OpenAI-compatible endpoint
+    anthropic?: string;    // Anthropic-compatible endpoint
+  };
+  // ...
+};
+```
+
+### DB 存储
+
+`managed_agent_llm_provider_configs` 新增 `anthropic_base_url` 列。
+
+用户创建 provider 时两端点自动填入默认值。Settings 页可分别编辑。
+
+### 运行时解析
+
+`LlmProviderRuntimeConfig` 新增 `anthropicBaseUrl`。harness adapter 按需取用：
+
+| Adapter | 使用的 URL |
+|---------|-----------|
+| pi | `baseUrl` |
+| claude-code | `anthropicBaseUrl` |
 
 ## 运行时解析
 

@@ -52,8 +52,8 @@ export const createClaudeCodeAdapter = (opts: { binaryPath?: string } = {}): Age
 				ANTHROPIC_AUTH_TOKEN: apiKey,
 			};
 
-			if (llmProvider?.baseUrl) {
-				resolvedEnv.ANTHROPIC_BASE_URL = llmProvider.baseUrl;
+			if (llmProvider?.anthropicBaseUrl || llmProvider?.baseUrl) {
+				resolvedEnv.ANTHROPIC_BASE_URL = llmProvider.anthropicBaseUrl ?? llmProvider.baseUrl ?? "";
 			}
 
 			const child = spawn(binary, args, {

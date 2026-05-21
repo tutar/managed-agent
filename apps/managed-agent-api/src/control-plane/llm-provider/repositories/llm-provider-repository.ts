@@ -18,6 +18,7 @@ export type LlmProviderConfigRecord = {
 	authMode: ProviderAuthMode;
 	encryptedSecret?: string;
 	baseUrl?: string;
+	anthropicBaseUrl?: string;
 	apiType?: ProviderApiType;
 	headers: Record<string, string>;
 	providerOptions: Record<string, unknown>;

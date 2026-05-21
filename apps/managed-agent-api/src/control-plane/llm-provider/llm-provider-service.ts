@@ -40,6 +40,7 @@ export type LlmProviderConfigSummary = {
 	displayName: string;
 	authMode: ProviderAuthMode;
 	baseUrl?: string;
+	anthropicBaseUrl?: string;
 	headers: Record<string, string>;
 	availableModels: LlmProviderModelDefinition[];
 	defaultModelId: string;
@@ -90,6 +91,7 @@ const mapRecordToSummary = (record: LlmProviderConfigRecord): LlmProviderConfigS
 		displayName: record.displayName,
 		authMode: record.authMode,
 		baseUrl: record.baseUrl,
+		anthropicBaseUrl: record.anthropicBaseUrl,
 		headers: record.headers,
 		availableModels: record.availableModels,
 		defaultModelId: record.defaultModelId,
