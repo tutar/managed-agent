@@ -1,18 +1,20 @@
 #!/bin/bash
 # Setup local sandbox environment (kind cluster + harness image).
 # Run from repo root. Requires Docker and kind.
+#
+# Usage:
+#   ./scripts/sandbox-setup.sh              # pi adapter (default)
+#   ./scripts/sandbox-setup.sh claude-code   # Claude Code adapter
 set -euo pipefail
 
-KIND_CLUSTER="${1:-managed-agent}"
+ADAPTER="${1:-pi}"
+KIND_CLUSTER="${2:-managed-agent}"
 HARNESS_DIR="apps/harness"
-IMAGE="managed-agent-sandbox:latest"
+IMAGE="managed-agent-sandbox:${ADAPTER}"
 
-echo "=== Checking prerequisites ==="
-command -v docker >/dev/null 2>&1 || { echo "docker not found"; exit 1; }
-command -v kind >/dev/null 2>&1 || { echo "kind not found"; exit 1; }
-
-echo "=== Building harness image ==="
+echo "=== Building harness image (adapter: ${ADAPTER}) ==="
 docker build --platform linux/amd64 \
+  --build-arg "AGENT_ADAPTER=${ADAPTER}" \
   -f "$HARNESS_DIR/Dockerfile" \
   . \
   -t "$IMAGE"
@@ -34,4 +36,4 @@ docker exec -i "${KIND_CLUSTER}-control-plane" \
 rm -f /tmp/sandbox-image.tar
 
 echo "=== Done ==="
-echo "Start services: npm run dev:all:sandbox"
+echo "Start: MANAGED_AGENT_ADAPTER=${ADAPTER} npm run dev:all:sandbox"
