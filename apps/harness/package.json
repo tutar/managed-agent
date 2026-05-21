@@ -24,6 +24,7 @@
     "@earendil-works/pi-coding-agent": "^0.74.0"
   },
   "devDependencies": {
-    "typescript": "~5.8.2"
+    "typescript": "~5.8.2",
+    "@managed-agent/contracts": "0.0.0"
   }
 }

@@ -7,7 +7,9 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative } from "node:path";
 
-import { type HarnessInput, runHarness } from "./executor.js";
+import { resolveAdapter } from "./adapter.js";
+import type { AgentAdapter } from "./adapters/types.js";
+import { type HarnessInput } from "./executor.js";
 
 const JOB_PATH = process.env.SANDBOX_JOB_PATH ?? "/job/input.json";
 const TRANSCRIPTS_ROOT = process.env.SANDBOX_TRANSCRIPTS_ROOT ?? "/mnt/transcripts";
@@ -63,6 +65,7 @@ await appendTranscript({
 
 // ── run harness ────────────────────────────────────────────────────────────
 const input: HarnessInput = {
+		llmProvider: (jobInput as Record<string, unknown>).llmProvider as HarnessInput["llmProvider"],
 	model,
 	thinkingLevel,
 	prompt: userText,
@@ -72,7 +75,8 @@ const input: HarnessInput = {
 };
 
 try {
-	const iterator = runHarness(input);
+	const adapter = await resolveAdapter();
+	const iterator = adapter.run(input);
 	let next = await iterator.next();
 
 	while (!next.done) {
