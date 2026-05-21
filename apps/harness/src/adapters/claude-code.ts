@@ -49,7 +49,7 @@ export const createClaudeCodeAdapter = (opts: { binaryPath?: string } = {}): Age
 			const resolvedEnv: Record<string, string> = {
 				...(process.env as Record<string, string>),
 				HOME: stateDir,
-				ANTHROPIC_AUTH_TOKEN: apiKey,
+				ANTHROPIC_API_KEY: apiKey,
 			};
 
 			if (llmProvider?.anthropicBaseUrl || llmProvider?.baseUrl) {
