@@ -19,6 +19,7 @@ type ProviderConfigInput = {
 	providerType: string;
 	displayName?: string;
 	baseUrl?: string;
+	anthropicBaseUrl?: string;
 	headers?: Record<string, string>;
 	availableModels?: string[];
 	defaultModelId?: string;
@@ -223,6 +224,7 @@ export const createLlmProviderService = ({
 		const displayName =
 			trimOptionalString(input.displayName) ?? existingRecord?.displayName ?? catalogItem.displayName;
 		const baseUrl = trimOptionalString(input.baseUrl) ?? existingRecord?.baseUrl;
+		const anthropicBaseUrl = trimOptionalString(input.anthropicBaseUrl) ?? existingRecord?.anthropicBaseUrl;
 		const defaultThinkingLevel =
 			trimOptionalString(input.defaultThinkingLevel) ??
 			existingRecord?.defaultThinkingLevel ??
@@ -283,6 +285,7 @@ export const createLlmProviderService = ({
 				authMode: catalogItem.authMode,
 				encryptedSecret,
 				baseUrl,
+				anthropicBaseUrl,
 				apiType: catalogItem.apiType,
 				headers,
 				providerOptions,
@@ -465,6 +468,7 @@ export const createLlmProviderService = ({
 					authMode: record.authMode,
 					apiType: record.apiType,
 					baseUrl: record.baseUrl,
+					anthropicBaseUrl: record.anthropicBaseUrl,
 					apiKey: secretMaterial.apiKey,
 					headers: record.headers,
 					oauthCredential: secretMaterial.oauthCredential,

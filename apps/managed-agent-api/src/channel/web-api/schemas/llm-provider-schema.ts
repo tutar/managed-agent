@@ -14,6 +14,7 @@ export const LlmProviderConfigRequestSchema = Type.Object({
 	providerType: NonEmptyStringSchema,
 	displayName: Type.Optional(NonEmptyStringSchema),
 	baseUrl: Type.Optional(NonEmptyStringSchema),
+	anthropicBaseUrl: Type.Optional(NonEmptyStringSchema),
 	headers: ProviderHeadersSchema,
 	availableModels: Type.Optional(Type.Array(NonEmptyStringSchema, { minItems: 1 })),
 	defaultModelId: Type.Optional(NonEmptyStringSchema),

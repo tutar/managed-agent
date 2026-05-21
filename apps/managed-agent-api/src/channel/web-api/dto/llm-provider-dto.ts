@@ -11,6 +11,7 @@ export type UpsertLlmProviderConfigRequestDto = {
 	providerType?: string;
 	displayName?: string;
 	baseUrl?: string;
+	anthropicBaseUrl?: string;
 	headers?: Record<string, string>;
 	availableModels?: string[];
 	defaultModelId?: string;
@@ -59,6 +60,7 @@ export const toUpsertLlmProviderConfigRequestDto = (
 		providerType: "providerType" in body ? trimOptionalString(body.providerType) : undefined,
 		displayName: "displayName" in body ? trimOptionalString(body.displayName) : undefined,
 		baseUrl: "baseUrl" in body ? trimOptionalString(body.baseUrl) : undefined,
+		anthropicBaseUrl: "anthropicBaseUrl" in body ? trimOptionalString(body.anthropicBaseUrl) : undefined,
 		headers: "headers" in body ? normalizeHeaders(body.headers) : undefined,
 		availableModels: "availableModels" in body ? normalizeModels(body.availableModels) : undefined,
 		defaultModelId: "defaultModelId" in body ? trimOptionalString(body.defaultModelId) : undefined,

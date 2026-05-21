@@ -103,6 +103,7 @@ export const llmProviderConfigsTable = pgTable(
 		authMode: text("auth_mode").notNull(),
 		encryptedSecret: text("encrypted_secret"),
 		baseUrl: text("base_url"),
+		anthropicBaseUrl: text("anthropic_base_url"),
 		apiType: text("api_type"),
 		headersJson: text("headers_json"),
 		providerOptionsJson: text("provider_options_json"),
